@@ -115,7 +115,8 @@ def run(task: str):
         parts += ["--dir", f'"{project_path}"']
     if session_args:
         parts += session_args
-    parts += ["--title", f'"farewell-agent: {task[:60]}"']
+    title_safe = task[:60].replace('"', "'").replace("\n", " ")
+    parts += ["--title", f'"{title_safe}"']
     cmd_str = " ".join(parts)
 
     info(f"Exec: opencode run --agent {agent} --model {model_str}")

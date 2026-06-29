@@ -44,7 +44,28 @@ def analyze_completion(code: str, name: str, task: str, task_class: str | None, 
 
     # 2. Suggest MEMORY.md updates based on task
     suggestions = _generate_suggestions(code, name, task, task_class, success, patterns)
+
+    # Auto-consolidate memory every 5 successful tasks
+    if success and patterns["total"] > 0 and patterns["total"] % 5 == 0:
+        _auto_consolidate(code, name, patterns)
+
     return suggestions
+
+
+def _auto_consolidate(code: str, name: str, patterns: dict):
+    """Write a compact memory summary based on task patterns."""
+    by_class = patterns.get("by_class", {})
+    lines = [f"Task history ({patterns['total']} total, {patterns['success']}/{patterns['failed']} success/fail):"]
+    for cls, stats in sorted(by_class.items()):
+        lines.append(f"- {cls}: {stats['success']}/{stats['total']} success")
+    content = "\n".join(lines) + "\n"
+    try:
+        current = memory_content(code, name)
+        if content not in current:
+            new_mem = current + "\n" + content if current else content
+            save_memory(code, name, new_mem)
+    except ValueError:
+        pass
 
 
 def _generate_suggestions(code: str, name: str, task: str, task_class: str | None,
@@ -53,34 +74,31 @@ def _generate_suggestions(code: str, name: str, task: str, task_class: str | Non
     suggestions = []
     current_mem = memory_content(code, name)
 
-    # Suggest when task is a common workflow
     workflow_keywords = {
-        "deploy": "Deployment: use command ...",
-        "build": "Build: command ...",
-        "test": "Testing: run with ...",
-        "docker": "Docker: commands ...",
-        "migration": "Migration: steps ...",
+        "deploy": None,
+        "build": None,
+        "test": None,
+        "docker": None,
+        "migration": None,
     }
     task_lower = task.lower()
-    for kw, template in workflow_keywords.items():
+    for kw in workflow_keywords:
         if kw in task_lower and kw not in current_mem.lower():
-            suggestions.append(f"Task involved '{kw}' — consider saving the exact command/workflow to MEMORY.md for reuse.")
+            suggestions.append(f"Task involved '{kw}' — consider saving steps to MEMORY.md.")
             break
 
-    # Suggest when success rate is low for a task class
     if task_class and task_class in patterns.get("by_class", {}):
         stats = patterns["by_class"][task_class]
         if stats["total"] >= 3:
             rate = stats["success"] / stats["total"]
             if rate < 0.5:
                 suggestions.append(
-                    f"Low success rate ({rate:.0%}) for '{task_class}' tasks "
-                    f"({stats['success']}/{stats['total']}). Consider reviewing approach or switching model tier."
+                    f"Low success rate ({rate:.0%}) for '{task_class}' "
+                    f"({stats['success']}/{stats['total']}). Consider switching model tier."
                 )
 
-    # First-time task class
     if task_class and task_class not in current_mem.lower():
-        suggestions.append(f"First '{task_class}' task done here. Note any project-specific workflow to MEMORY.md.")
+        suggestions.append(f"First '{task_class}' task — note any project-specific workflow to MEMORY.md.")
 
     return suggestions
 

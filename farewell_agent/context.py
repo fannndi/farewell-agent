@@ -128,15 +128,32 @@ def lookup(task: str) -> str:
                 title = text.split("\n")[0].lstrip("#").strip() if text else rel_path
                 blocks.append(f"[Guide] **{title}**\n{text[:500]}")
 
-    # 2. Search skill files for keyword matches
+    # 2. Search skill files — require 2+ keyword matches, or match domain
     ecc_dir = vault / "ecc"
     found_skills = []
+    domain_skills = {
+        "python": ["python-patterns", "python-testing", "fastapi-patterns", "django-patterns"],
+        "flutter": ["dart-flutter-patterns", "flutter-dart-code-review", "compose-multiplatform-patterns"],
+        "rust": ["rust-patterns", "rust-testing"],
+        "docker": ["docker-patterns", "deployment-patterns"],
+        "security": ["ECC-Security"],
+        "golang": ["golang-patterns", "golang-testing"],
+        "react": ["react-patterns", "frontend-patterns"],
+        "database": ["database-migrations", "postgres-patterns"],
+        "deploy": ["deployment-patterns"],
+        "test": ["e2e-testing"],
+        "git": ["git-workflow"],
+    }
+    matched_domains = [d for d in domain_skills if d in task_lower]
     if ecc_dir.exists():
         for f in ecc_dir.iterdir():
             if not f.suffix == ".md" or not f.is_file():
                 continue
             name = f.stem.lower()
-            if any(kw in name for kw in keywords):
+            # Require 2+ keyword matches for generic skills, or domain match
+            kw_matches = sum(1 for kw in keywords if kw in name)
+            domain_match = any(skill_name in name for d in matched_domains for skill_name in domain_skills[d])
+            if kw_matches >= 2 or domain_match:
                 try:
                     text = f.read_text(encoding="utf-8", errors="ignore")[:200]
                     title = text.split("\n")[0].lstrip("#").strip() if text else name
