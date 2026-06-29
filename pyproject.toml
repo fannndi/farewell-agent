@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "farewell-agent"
+version = "3.0.0"
+description = "AI coding assistant orchestrator — project-aware skills, memory, model routing"
+requires-python = ">=3.10"
+dependencies = ["pyyaml>=6.0"]
+
+[project.scripts]
+farewell-agent = "farewell_agent.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["farewell_agent"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

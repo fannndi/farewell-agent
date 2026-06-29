@@ -1,0 +1,14 @@
+# Farewell Agent — Model Configuration
+# Copy this to api-key.txt and fill in your actual keys
+
+NINEROUTER_API_KEY=sk-your-9router-api-key
+
+# Model keys — these names are resolved against 9Router combo names
+# If a key matches a combo name, 9Router routing is used
+# If not, the value is used as a direct model ID
+
+LEADER_1=ocg/deepseek-v4-flash
+LEADER_2=ds/deepseek-v4-flash
+SPECIAL=oc/deepseek-v4-flash-free
+WORKER=oc/mimo-v2.5-free
+WORKER_PRO=ocg/deepseek-v4-flash

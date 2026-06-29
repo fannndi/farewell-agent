@@ -1,0 +1,47 @@
+# Runtime state
+.opencode/
+!.opencode/plugins/
+
+# Logging
+logging.md
+session-log.md
+
+# Cost tracking (local state, per-user)
+.farewell/cost-budget.json
+.farewell/cost-log.csv
+
+# Secrets
+api-key.txt
+!.api-key.example.txt
+.env
+
+# Dependencies (cloned, not committed)
+/ecc/
+/9router/
+/awesome-opencode/
+
+# Model files
+models/
+
+# Managed projects
+TEMP/
+
+# Machine-specific state (regenerable)
+.farewell/registry.json
+.farewell/manifests/
+.farewell/memory/
+
+# Bytecode
+__pycache__/
+*.py[cod]
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Generated
+/opencode.jsonc
