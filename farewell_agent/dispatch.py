@@ -7,7 +7,7 @@ from .state.memory import save_session, load_session
 from .state.session import start_session, end_session, suggest_resume
 from .roles import resolve_for_tier, resolve_agent
 from .intent import classify
-from .context import enrich
+from .context import lookup, is_ready
 from .learn import analyze_completion, insights
 from .workmode import current as current_mode
 from .sync import render as render_config
@@ -73,15 +73,18 @@ def run(task: str):
     session_id = start_session(code, active, task, agent, resolved["leader"], task_class)
     info(f"Session: {session_id}")
 
-    # --- 6. Knowledge context enrichment ---
-    knowledge_block = enrich(task, code, active)
-    if knowledge_block:
-        info("Knowledge context loaded")
-        # Inject knowledge into task prompt
-        enriched_task = f"{task}\n\n{knowledge_block}"
+    # --- 6. Buku Panduan (always consult guide book before action) ---
+    print("\n  [?] Membuka buku panduan...")
+    guide_block = lookup(task)
+    if guide_block:
+        print(guide_block[:1200])
+        enriched_task = f"{task}\n\n{guide_block}"
     else:
+        if is_ready():
+            print("  (tidak ada artikel yang cocok di buku panduan)")
+        else:
+            print("  (buku panduan/Obsidian belum dikonfigurasi)")
         enriched_task = task
-        info("No additional knowledge context")
 
     # --- 7. Build command ---
     session_args = []

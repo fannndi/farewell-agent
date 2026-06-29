@@ -323,6 +323,20 @@ def cmd_sessions(args):
         else:
             print("  No task data yet.\n")
 
+def cmd_cari(args):
+    """Search guide book (Obsidian vault) for knowledge."""
+    from .guide import search_and_show
+    query = " ".join(args.query) if isinstance(args.query, list) else (args.query or "")
+    search_and_show(query)
+
+def cmd_panduan(args):
+    """Show guide book index or status."""
+    from .guide import show_status, open_index
+    if args.action == "status":
+        show_status()
+    else:
+        open_index()
+
 def cmd_extract_knowledge(args):
     """Extract ECC, awesome-opencode, 9Router knowledge to Obsidian vault."""
     try:
@@ -493,6 +507,15 @@ def main():
     p = sub.add_parser("refactor", help="Clean up code: dead code, imports, structure")
     p.add_argument("task", nargs="?", default="", help="Focus area (optional)")
     p.set_defaults(func=lambda a: cmd_run(a, wf_override="refactor"))
+
+    # Guide book (buku panduan) commands
+    p = sub.add_parser("cari", help="Cari di buku panduan (Obsidian vault)")
+    p.add_argument("query", nargs="+", help="Kata kunci pencarian")
+    p.set_defaults(func=cmd_cari)
+
+    p = sub.add_parser("panduan", help="Buka buku panduan atau cek status")
+    p.add_argument("action", nargs="?", default="index", choices=["index", "status"])
+    p.set_defaults(func=cmd_panduan)
 
     p = sub.add_parser("extract-knowledge", help="Extract repo knowledge to Obsidian vault")
     p.set_defaults(func=cmd_extract_knowledge)

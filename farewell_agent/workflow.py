@@ -2,6 +2,8 @@
 
 Maps user-friendly keywords ("audit", "tambah fitur", "cek") to multi-step
 processes that may involve multiple agents, mode switches, and reports.
+
+RULE: Always consult Buku Panduan (Obsidian) before each step.
 """
 
 import shutil, subprocess, sys, time, json
@@ -9,6 +11,7 @@ from . import config
 from .state.registry import get_active, get_code, get_path
 from .helpers import step, ok, info, fail, c
 from .sync import render as render_config
+from .context import lookup, is_ready as guide_ready
 
 
 def run_workflow(wf: str, task: str):
@@ -148,7 +151,10 @@ def _ensure_plan_mode():
 
 
 def _run_agent(agent: str, task: str):
-    """Run opencode with a specific agent and task, wait for result."""
+    """Run opencode with a specific agent and task, wait for result.
+
+    Always consults Buku Panduan (Obsidian) first for relevant knowledge.
+    """
     opencode_path = shutil.which("opencode")
     if not opencode_path:
         fail("`opencode` not found in PATH.")
@@ -158,10 +164,19 @@ def _run_agent(agent: str, task: str):
     code = get_code(active)
     project_path = get_path(active)
 
+    # Consult guide book before executing
+    print("\n  [?] Cek buku panduan...")
+    guide_block = lookup(task)
+    if guide_block:
+        print(guide_block[:800])
+        enriched_task = f"{task}\n\n{guide_block}"
+    else:
+        enriched_task = task
+
     render_config()
 
     cmd = [
-        opencode_path, "run", task,
+        opencode_path, "run", enriched_task,
         "--agent", agent,
         "--format", "json",
     ]
