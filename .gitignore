@@ -45,3 +45,6 @@ Desktop.ini
 
 # Generated
 /opencode.jsonc
+
+# Execution traces (local)
+.farewell/trace-log.csv

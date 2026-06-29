@@ -289,17 +289,20 @@ def write_context_footer(project: str | None = None, mode: str | None = None):
     from .workmode import current as wm_current
     from .helpers import ok as _h_ok
     if project is None: project = get_active()
+    if not project: project = "farewell-agent"
     if mode is None: mode = wm_current()
     code = get_code(project)
+    if code == "???":
+        code = "001"
     team = _get_team_label()
     skills = get_skills(code, project)
     sk = f" | Skills: {len(skills)}" if skills else ""
     of = f" | Mode: {mode.upper()}"
 
     write_active_skills(code, project)
-    mem_ctx = get_context(code, project)
-    mem_text = memory_content(code, project)
-    user_text = user_content(code, project)
+    mem_ctx = get_context(code, project) if project else ""
+    mem_text = memory_content(code, project) if project else ""
+    user_text = user_content(code, project) if project else ""
 
     stack = list(dict.fromkeys([s.split("-")[0] for s in skills if "-" in s]))
     if stack:
