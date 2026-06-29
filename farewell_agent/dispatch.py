@@ -31,8 +31,14 @@ def run(task: str):
     code = get_code(active)
     project_path = get_path(active)
 
-    # --- 1. Intent classification ---
-    task_class = classify(task)
+    # --- 1. Intent classification (workflow + task) ---
+    wf, task_class = classify(task)
+    if wf:
+        # High-level workflow detected — delegate to workflow orchestrator
+        info(f"Workflow: {wf}")
+        from .workflow import run_workflow
+        run_workflow(wf, task)
+        return
     if task_class:
         info(f"Intent: {task_class}")
 

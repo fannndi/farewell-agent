@@ -206,9 +206,15 @@ def cmd_cool(args):
                 if cnt > 10: print(f"    ... +{cnt-10} more")
                 print()
 
-def cmd_run(args):
+def cmd_run(args, wf_override=None):
     from .dispatch import run
-    run(args.task)
+    task = getattr(args, 'task', '') or ''
+    if wf_override:
+        # Short-form command that bypasses auto-classification
+        from .workflow import run_workflow
+        run_workflow(wf_override, task)
+    else:
+        run(task)
 
 def cmd_memory(args):
     from .state.memory import memory_content, save_memory, user_content, save_user
@@ -401,7 +407,7 @@ def main():
 
     parser = argparse.ArgumentParser(
         prog="farewell-agent",
-        description="AI coding assistant orchestrator — project-aware skills, memory, model routing"
+        description="AI coding assistant orchestrator - project-aware skills, memory, model routing"
     )
     sub = parser.add_subparsers(dest="command")
 
@@ -463,6 +469,30 @@ def main():
     p = sub.add_parser("sessions", help="View session history and insights")
     p.add_argument("action", nargs="?", default="list", choices=["list", "insights"])
     p.set_defaults(func=cmd_sessions)
+
+    # Short-form workflow commands
+    p = sub.add_parser("audit", help="Audit project: code review + security check")
+    p.add_argument("task", nargs="?", default="", help="Focus area (optional)")
+    p.set_defaults(func=lambda a: cmd_run(a, wf_override="audit"))
+
+    p = sub.add_parser("feature", help="Add new feature: plan, implement, review")
+    p.add_argument("task", help="Feature description")
+    p.set_defaults(func=lambda a: cmd_run(a, wf_override="feature"))
+
+    p = sub.add_parser("fix", help="Fix a bug: diagnose, fix, verify")
+    p.add_argument("task", help="Bug description")
+    p.set_defaults(func=lambda a: cmd_run(a, wf_override="fix"))
+
+    p = sub.add_parser("learn", help="Research a topic in plan mode")
+    p.add_argument("task", help="Topic to research")
+    p.set_defaults(func=lambda a: cmd_run(a, wf_override="learn"))
+
+    p = sub.add_parser("health", help="System health check")
+    p.set_defaults(func=lambda a: cmd_run(a, wf_override="health"))
+
+    p = sub.add_parser("refactor", help="Clean up code: dead code, imports, structure")
+    p.add_argument("task", nargs="?", default="", help="Focus area (optional)")
+    p.set_defaults(func=lambda a: cmd_run(a, wf_override="refactor"))
 
     p = sub.add_parser("extract-knowledge", help="Extract repo knowledge to Obsidian vault")
     p.set_defaults(func=cmd_extract_knowledge)
