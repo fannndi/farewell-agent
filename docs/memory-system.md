@@ -1,6 +1,6 @@
 # Memory System
 
-Inspired by [Hermes Agent](https://github.com/NousResearch/hermes-agent)'s dual-memory architecture.
+Inspired by [Hermes Agent](https://github.com/NousResearch/hermes-agent)'s dual-memory architecture + [Hermes Agent Self-Evolution](https://github.com/NousResearch/hermes-agent-self-evolution) trace-driven learning.
 
 ## Two Memory Files
 
@@ -33,7 +33,7 @@ At the start of every session (when you run `farewell-agent run`):
 **In USER.md:**
 - Your name and role
 - Communication preferences (terse vs detailed)
-- Technical skill level (this project assumes you're a beginner)
+- Technical skill level
 - Things to avoid / pet peeves
 
 ### Capacity Management
@@ -44,7 +44,53 @@ If MEMORY.md exceeds 2,200 chars, `farewell-agent memory save` returns an ERROR 
 [FAIL] Memory too long (2300/2200 chars). Consolidate first.
 ```
 
-This forces you (or the AI) to consolidate — merge related entries, remove stale ones — before adding new content.
+This forces you (or the AI) to consolidate before adding new content.
+
+## Auto-Consolidation (Self-Evolving Memory)
+
+Setelah **setiap 5 task sukses**, farewell-agent otomatis nulis ringkasan ke MEMORY.md:
+
+```
+Task history (5 total, 4/1 success/fail):
+- feature: 2/2 success
+- fix: 2/1 success
+```
+
+Ini terinspirasi dari Hermes Self-Evolution pattern: execution trace → analysis → memory update.
+
+## Session Lineage
+
+Setiap `run` mencatat session lineage:
+
+```json
+{
+  "sessions": [
+    {
+      "id": "001-project-1-143022",
+      "parent": null,
+      "task": "add login page",
+      "agent": "build",
+      "status": "completed",
+      "summary": "Added login with email validation"
+    },
+    {
+      "id": "001-project-2-150012",
+      "parent": "001-project-1-143022",
+      "task": "fix auth bug",
+      "agent": "build",
+      "status": "completed"
+    }
+  ]
+}
+```
+
+### Resume Detection
+
+Saat `run` lagi, otomatis detek session terakhir:
+
+```
+[Resume?] Previous session incomplete: fix auth bug (status: failed)
+```
 
 ## Commands
 
@@ -55,9 +101,18 @@ py -m farewell_agent memory show
 # Edit with $EDITOR (Notepad by default on Windows)
 py -m farewell_agent memory edit
 
-# Quick save
-py -m farewell_agent memory save "This project uses Flutter 3.24 + Riverpod"
+# Quick save (+ auto-sync ke Obsidian)
+py -m farewell_agent memory save "Flutter 3.24, Riverpod, GoRouter"
+
+# Save ke user profile
 py -m farewell_agent memory save --target user "User prefers concise examples"
+
+# Skip Obsidian sync
+py -m farewell_agent memory save "note" --no-sync
+
+# Session history
+py -m farewell_agent sessions list
+py -m farewell_agent sessions insights
 ```
 
 ## Obsidian Vault Integration
@@ -73,9 +128,10 @@ OBSIDIAN_VAULT=C:\Users\You\Documents\my-obsidian-vault
 - `USER.md` → `{vault}/{code}-{name}/USER.md`
 - Session log → `{vault}/{code}-{name}/Session-Log.md` (append tiap `run`)
 
-Now the vault has per-project AI folders. Searchable via Obsidian.
-
 ```bash
+# Ekstrak semua pengetahuan dari 5 repo ke vault
+py -m farewell_agent extract-knowledge
+
 # Save + auto-sync to Obsidian (default)
 py -m farewell_agent memory save "Flutter 3.24, Riverpod 2.5"
 
@@ -96,15 +152,6 @@ Ini adalah **eval dataset** untuk self-evolution (ala [Hermes Agent Self-Evoluti
 ```bash
 py -m farewell_agent cost status  # lihat 5 trace terakhir
 ```
-
-## Background Review (future)
-
-After each `run` completes, a background review process can:
-1. Analyze what was learned
-2. Suggest MEMORY.md updates
-3. Create custom skills in `.farewell/custom-skills/`
-
-This runs on the SPECIAL model (not premium LEADER).
 
 ## Why Frozen Snapshot?
 

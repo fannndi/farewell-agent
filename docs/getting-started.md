@@ -4,8 +4,9 @@
 
 - Python 3.10+
 - OpenCode (`opencode run` — install from [opencode.ai](https://opencode.ai))
-- 9Router (Node.js, port 20128)
-- Git (for ECC/awesome-opencode sync)
+- 9Router (Node.js, port 20128) — auto-installed via `setup`
+- Git (for cloning dependencies)
+- Obsidian (optional — for knowledge base / buku panduan)
 
 ## Installation
 
@@ -25,82 +26,102 @@ pip install pyyaml
 ```bash
 py -m farewell_agent setup
 ```
-Ini clone 3 repo penting: **9Router** (LLM proxy), **ECC** (271 skills), **awesome-opencode** (plugin registry).
+
+Ini clone 5 repo penting:
+- **9Router** — LLM routing/proxy
+- **ECC** — 271 skill library
+- **awesome-opencode** — 212 plugin/agent/project entries
+- **Hermes Agent** (205k stars) — self-improving AI agent
+- **Hermes Self-Evolution** (4.4k stars) — DSPy + GEPA optimization
 
 ### 1. Prepare config
 
-Copy the example API key file and fill in your model keys:
-
 ```bash
 cp .api-key.example.txt api-key.txt
-# Edit api-key.txt with your actual model names
 ```
 
-Example `api-key.txt`:
+Edit `api-key.txt` — isi model keys kamu:
+
 ```
 NINEROUTER_API_KEY=sk-your-key
 LEADER_1=ocg/deepseek-v4-flash
 SPECIAL=oc/deepseek-v4-flash-free
 WORKER=oc/mimo-v2.5-free
 WORKER_PRO=ocg/deepseek-v4-flash
+# Optional: buat sync ke Obsidian vault
+OBSIDIAN_VAULT=C:\Users\You\Documents\obsidian-vault
 ```
 
-### 2. Run your first daily
+### 2. Setup Obsidian (optional)
+
+Kalau punya Obsidian vault, set `OBSIDIAN_VAULT` di `api-key.txt`, lalu:
+
+```bash
+# Ekstrak knowledge dari 5 repo ke vault
+py -m farewell_agent extract-knowledge
+
+# Cek hasilnya
+py -m farewell_agent panduan
+py -m farewell_agent cari flutter
+```
+
+### 3. Run your first daily
 
 ```bash
 py -m farewell_agent daily
 ```
 
-This starts 9Router, syncs ECC skills, regenerates config, and shows system readiness.
+Ini otomatis: start 9Router → sync ECC/awesome → regenerate config → readiness report.
 
-### 3. Register your project
+### 4. Register your project
 
 ```bash
-# Go to your project first, then:
-cd /path/to/your-project
+cd C:\Users\You\Documents\my-project
 py -m C:\path\to\farewell-agent -m farewell_agent start-project
 ```
 
-Or with explicit path:
+Atau dengan path eksplisit:
+
 ```bash
-cd C:\Users\You\Documents\farewell-agent
 py -m farewell_agent setup-project C:\Users\You\Documents\my-project
 ```
 
-### 4. Check status
+### 5. Jalanin task pertama
 
 ```bash
-py -m farewell_agent status
+# Cara simpel — farewell-agent otomatis detek intent
+py -m farewell_agent run "add login page with email and password"
+
+# Atau pake workflow command
+py -m farewell_agent feature "login page with email and password"
 ```
 
-### 5. Run a task
+## Daily Workflow
 
-```bash
-py -m farewell_agent run "Add error handling to the API routes"
-```
-
-## Daily workflow
-
-Once you're set up, your daily routine is just:
+Setelah setup, tiap hari cukup:
 
 ```bash
 py -m farewell_agent daily
 py -m farewell_agent run "continue working on [task]"
 ```
 
-No need to remember project codes, team tiers, or model names — the agent resolves everything automatically.
-
-## Switch team tier
+## Contoh Cepat
 
 ```bash
-py -m farewell_agent team divisi   # Premium models for all tasks
-py -m farewell_agent team tim      # Default — balanced
-py -m farewell_agent team bawahan  # Most economical
+# Indonesia — farewell-agent paham
+py -m farewell_agent run "perbaiki bug tanggal di laporan"
+py -m farewell_agent run "tambah fitur export PDF"
+py -m farewell_agent run "cek kesehatan system"
+py -m farewell_agent run "belajar riverpod flutter"
+
+# Inggris
+py -m farewell_agent run "fix date parsing in report module"
+py -m farewell_agent run "add export to PDF feature"
 ```
 
-## Switch work mode
+## Tips
 
-```bash
-py -m farewell_agent workmode plan   # Read-only (research/planning)
-py -m farewell_agent workmode build  # Full access (execution)
-```
+- **Gak tau mau ngapain?** — `py -m farewell_agent panduan` (buka buku panduan)
+- **Mau cari pengetahuan?** — `py -m farewell_agent cari <topik>`
+- **Error task?** — Cek `py -m farewell_agent sessions list` + `py -m farewell_agent sessions insights`
+- **Mau ganti model tier?** — `py -m farewell_agent team divisi` (lebih kuat, lebih mahal)

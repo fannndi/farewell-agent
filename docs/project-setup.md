@@ -30,7 +30,6 @@ This means your project becomes **self-aware** — OpenCode running from your pr
 
 ```bash
 # Register a Flutter project
-cd C:\Users\You\Documents\farewell-agent
 py -m farewell_agent setup-project C:\Users\You\Documents\service-hub
 
 # Output:
@@ -67,4 +66,10 @@ After registering multiple projects, switch between them:
 py -m farewell_agent project               # list all
 py -m farewell_agent project switch 002    # switch to project 002
 py -m farewell_agent project 002           # shortcut (same as above)
+```
+
+## Registering from outside the project directory
+
+```bash
+py -m farewell_agent setup-project /absolute/path/to/project
 ```
