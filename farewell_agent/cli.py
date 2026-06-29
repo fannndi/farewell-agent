@@ -245,13 +245,27 @@ def cmd_memory(args):
             print(f"  {c(msg2, 'red')}")
         os.unlink(f.name)
     elif args.action == "save":
-        target = args.target or "memory"
-        content = " ".join(args.content) if args.content else ""
+        raw = list(args.content or [])
+        target = "memory"
+        content_parts = []
+        no_sync = False
+        i = 0
+        while i < len(raw):
+            if raw[i] == "--target" and i + 1 < len(raw):
+                target = raw[i + 1]
+                i += 2
+            elif raw[i] == "--no-sync":
+                no_sync = True
+                i += 1
+            else:
+                content_parts.append(raw[i])
+                i += 1
+        content = " ".join(content_parts)
         if not content:
             print("  Usage: farewell-agent memory save --target memory|user \"content\"")
             return
         try:
-            do_sync = not getattr(args, 'no_sync', False)
+            do_sync = not no_sync
             if target == "user":
                 save_user(code, active, content + "\n", sync_obsidian=do_sync)
             else:
@@ -473,7 +487,7 @@ def main():
     p.add_argument("action", choices=["show", "edit", "save"])
     p.add_argument("--target", choices=["memory", "user"], default="memory")
     p.add_argument("--no-sync", action="store_true", help="Skip Obsidian vault sync")
-    p.add_argument("content", nargs="*", help="Content for save action")
+    p.add_argument("content", nargs=argparse.REMAINDER, help="Content for save action")
     p.set_defaults(func=cmd_memory)
 
     p = sub.add_parser("cost", help="Token usage & budget")
