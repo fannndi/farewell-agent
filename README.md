@@ -76,12 +76,14 @@ py -m farewell_agent run "audit security vulnerabilities"
 py -m farewell_agent project 002
 py -m farewell_agent run "refactor the auth service"
 
-# Simpen memori biar gak lupa
+# Simpen memori (auto-sync ke Obsidian kalau api-key.txt punya OBSIDIAN_VAULT)
 py -m farewell_agent memory save "This project uses Riverpod 2.5 + GoRouter"
 py -m farewell_agent memory save --target user "Aku pemula, jelasin step by step"
+py -m farewell_agent memory save "note rahasia" --no-sync  # skip Obsidian
 
-# Cek status
+# Cek status + budget + trace terakhir
 py -m farewell_agent status
+py -m farewell_agent cost status
 ```
 
 ## Commands at a Glance
@@ -95,7 +97,8 @@ py -m farewell_agent status
 | `project [list\|switch <code>]` | List/switch project |
 | `team [divisi\|tim\|bawahan]` | Switch model tier |
 | `workmode [plan\|build]` | Read-only / full access |
-| `memory [show\|edit\|save]` | Manage project memory |
+| `memory [show\|edit\|save]` | Manage project memory (+ Obsidian sync) |
+| `cost status` | Cek budget + trace eksekusi terakhir |
 | `org [chart\|roles\|workflow]` | Show AI org hierarchy |
 | `cool [list\|search\|recommend]` | Browse awesome-opencode |
 | `cost status` | Cek budget token |
@@ -118,7 +121,8 @@ farewell-agent/
 │   ├── indexer.py         # Skill matching
 │   ├── awesome_indexer.py # awesome-opencode
 │   ├── router_client.py   # Provider interface
-│   ├── cost.py            # Budget tracking
+│   ├── cost.py            # Budget tracking + execution trace log
+│   ├── obsidian.py        # Obsidian vault sync
 │   ├── org.py             # Org hierarchy display
 │   ├── helpers.py         # Colors & formatting
 │   └── state/

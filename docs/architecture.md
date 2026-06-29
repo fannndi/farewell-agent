@@ -41,7 +41,8 @@ You ──→ farewell-agent ──→ OpenCode (opencode run) ──→ AI mode
 | `indexer.py` | Stack → ECC skill matching |
 | `awesome_indexer.py` | awesome-opencode registry integration |
 | `router_client.py` | ModelProvider interface |
-| `cost.py` | Token usage tracking + budget |
+| `cost.py` | Token usage tracking + budget + execution trace log |
+| `obsidian.py` | Obsidian vault sync (MEMORY.md + session notes) |
 
 ## Data Flow: `run` command
 
@@ -53,8 +54,26 @@ You ──→ farewell-agent ──→ OpenCode (opencode run) ──→ AI mode
 5. sync.render()                  → regenerate opencode.jsonc
 6. dispatch: opencode run ...     → execute task via OpenCode
 7. state/memory.save_session()    → save session ID + summary
-8. write_context_footer()         → refresh .opencode/context.md
+8. write_trace()                  → execution trace to trace-log.csv   ← NEW
+9. obsidian.write_session_note()  → log to vault Session-Log.md         ← NEW
+10. write_context_footer()        → refresh .opencode/context.md
 ```
+
+## Self-Evolution Foundation
+
+After setiap `run`, farewell-agent mencatat **execution trace** (Hermes Agent Self-Evolution pattern):
+
+```
+trace-log.csv: timestamp, project, task_class, agent, model, success, summary, duration_s
+```
+
+Ini adalah **eval dataset** yang nantinya bisa dipakai DSPy + GEPA [Hermes Agent Self-Evolution](https://github.com/NousResearch/hermes-agent-self-evolution) untuk auto-evolve:
+
+| Phase | What | Tool |
+|-------|------|------|
+| Sekarang | Execution trace logging | `cost.py`, `trace-log.csv` |
+| Future (v3.2) | Background review → MEMORY.md update | LLM call (SPECIAL model) |
+| Future (v3.4) | Custom skill evolution | DSPy + GEPA pipeline |
 
 ## Memory System
 

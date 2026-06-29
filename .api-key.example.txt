@@ -12,3 +12,6 @@ LEADER_2=ds/deepseek-v4-flash
 SPECIAL=oc/deepseek-v4-flash-free
 WORKER=oc/mimo-v2.5-free
 WORKER_PRO=ocg/deepseek-v4-flash
+
+# Optional: Obsidian vault path (auto-sync MEMORY.md + session notes)
+# OBSIDIAN_VAULT=C:\Users\You\Documents\my-obsidian-vault

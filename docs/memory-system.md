@@ -60,6 +60,43 @@ py -m farewell_agent memory save "This project uses Flutter 3.24 + Riverpod"
 py -m farewell_agent memory save --target user "User prefers concise examples"
 ```
 
+## Obsidian Vault Integration
+
+Set `OBSIDIAN_VAULT` in `api-key.txt` to auto-sync memory to your Obsidian vault:
+
+```
+OBSIDIAN_VAULT=C:\Users\You\Documents\my-obsidian-vault
+```
+
+**What syncs automatically:**
+- `MEMORY.md` → `{vault}/{code}-{name}/MEMORY.md`
+- `USER.md` → `{vault}/{code}-{name}/USER.md`
+- Session log → `{vault}/{code}-{name}/Session-Log.md` (append tiap `run`)
+
+Now the vault has per-project AI folders. Searchable via Obsidian.
+
+```bash
+# Save + auto-sync to Obsidian (default)
+py -m farewell_agent memory save "Flutter 3.24, Riverpod 2.5"
+
+# Skip Obsidian sync
+py -m farewell_agent memory save "quick note" --no-sync
+```
+
+## Execution Trace Log
+
+Setiap `farewell-agent run` otomatis mencatat trace ke `.farewell/trace-log.csv`:
+
+```
+timestamp,project,task_class,agent,model,success,summary,duration_s
+```
+
+Ini adalah **eval dataset** untuk self-evolution (ala [Hermes Agent Self-Evolution](https://github.com/NousResearch/hermes-agent-self-evolution)) — foundation untuk auto-evolve skills berdasarkan pola pemakaian nyata.
+
+```bash
+py -m farewell_agent cost status  # lihat 5 trace terakhir
+```
+
 ## Background Review (future)
 
 After each `run` completes, a background review process can:
@@ -67,7 +104,7 @@ After each `run` completes, a background review process can:
 2. Suggest MEMORY.md updates
 3. Create custom skills in `.farewell/custom-skills/`
 
-This is configured via `roles.json` and runs on the SPECIAL model (not the premium LEADER).
+This runs on the SPECIAL model (not premium LEADER).
 
 ## Why Frozen Snapshot?
 

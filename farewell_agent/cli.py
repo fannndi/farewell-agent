@@ -36,7 +36,11 @@ def cmd_status(args):
     bgt = f" | Budget: ${budget['spent_today']:.2f}/day ${budget['spent_month']:.2f}/mo"
     mem = memory_content(code, active)
     mem_flag = " | MEMORY: yes" if mem else ""
-    print(f"\n  {c(f'Farewell: ON | {code}-{active} | {mode.upper()}{sk}{ao}{bgt}{mem_flag} | {team}', 'cyan')}\n")
+    try:
+        from .obsidian import is_configured, vault_path
+        ob_flag = f" | Obsidian: {vault_path()}" if is_configured() else ""
+    except Exception: ob_flag = ""
+    print(f"\n  {c(f'Farewell: ON | {code}-{active} | {mode.upper()}{sk}{ao}{bgt}{mem_flag}{ob_flag} | {team}', 'cyan')}\n")
 
 def cmd_project(args):
     from .state.registry import list_all, load, save
@@ -226,25 +230,30 @@ def cmd_memory(args):
             print(f"  {c(msg2, 'red')}")
         os.unlink(f.name)
     elif args.action == "save":
-        # Usage: farewell-agent memory save --target memory|user "content here"
         target = args.target or "memory"
         content = " ".join(args.content) if args.content else ""
         if not content:
             print("  Usage: farewell-agent memory save --target memory|user \"content\"")
             return
         try:
+            do_sync = not getattr(args, 'no_sync', False)
             if target == "user":
-                save_user(code, active, content + "\n")
+                save_user(code, active, content + "\n", sync_obsidian=do_sync)
             else:
-                save_memory(code, active, content + "\n")
+                save_memory(code, active, content + "\n", sync_obsidian=do_sync)
             ok_label = f"[OK] {target.upper()}.md saved"
             print(f"  {c(ok_label, 'green')}")
+            if do_sync:
+                try:
+                    from .obsidian import is_configured, vault_path
+                    if is_configured(): info(f"Synced to Obsidian: {vault_path()}/{code}-{active}/")
+                except: pass
         except ValueError as e:
             fail_msg = f"[FAIL] {e}"
             print(f"  {c(fail_msg, 'red')}")
 
 def cmd_cost(args):
-    from .cost import budget_status, log_entry
+    from .cost import budget_status, recent_traces
     bs = budget_status()
     if args.action == "status":
         print(f"\n  {c('Budget', 'cyan')}")
@@ -254,6 +263,14 @@ def cmd_cost(args):
         pct_m = (bs['spent_month'] / bs['monthly_budget'] * 100) if bs['monthly_budget'] else 0
         if pct_d > 80: print(f"  {c(f'Warning: {pct_d:.0f}% daily budget used!', 'yellow')}")
         if pct_m > 80: print(f"  {c(f'Warning: {pct_m:.0f}% monthly budget used!', 'yellow')}")
+        print(f"\n  {c('Recent Executions (trace-log.csv)', 'cyan')}")
+        traces = recent_traces(5)
+        if traces:
+            for t in traces:
+                icon = "✅" if t["success"] else "❌"
+                print(f"  {icon} {t['project']} | {t['class']} | {t['agent']} | {t['summary'][:60]}")
+        else:
+            print("  (no traces yet — run a task first)")
         print()
 
 def _get_team_label() -> str:
@@ -362,6 +379,7 @@ def main():
     p = sub.add_parser("memory", help="View / edit MEMORY.md and USER.md")
     p.add_argument("action", choices=["show", "edit", "save"])
     p.add_argument("--target", choices=["memory", "user"], default="memory")
+    p.add_argument("--no-sync", action="store_true", help="Skip Obsidian vault sync")
     p.add_argument("content", nargs="*", help="Content for save action")
     p.set_defaults(func=cmd_memory)
 
