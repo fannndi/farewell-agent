@@ -277,6 +277,29 @@ def cmd_cost(args):
             print("  (no traces yet — run a task first)")
         print()
 
+def cmd_extract_knowledge(args):
+    """Extract ECC, awesome-opencode, 9Router knowledge to Obsidian vault."""
+    try:
+        from .obsidian import is_configured
+        if not is_configured():
+            print("  Obsidian vault not configured. Set OBSIDIAN_VAULT in api-key.txt")
+            return
+    except Exception as e:
+        print(f"  Error: {e}")
+        return
+    import subprocess, sys
+    script = config.ROOT_DIR / "scripts" / "extract_knowledge.py"
+    if not script.exists():
+        print("  Script not found: scripts/extract_knowledge.py")
+        return
+    r = subprocess.run([sys.executable, str(script)], cwd=str(config.ROOT_DIR))
+    if r.returncode == 0:
+        from .helpers import ok
+        ok("Knowledge extracted. Open Obsidian and browse _farewell-agent/")
+    else:
+        from .helpers import fail
+        fail("Extraction failed — check errors above")
+
 def _get_team_label() -> str:
     f = config.FAREWELL_DIR / "team.json"
     if f.exists():
@@ -396,6 +419,9 @@ def main():
     p = sub.add_parser("cost", help="Token usage & budget")
     p.add_argument("action", nargs="?", default="status", choices=["status"])
     p.set_defaults(func=cmd_cost)
+
+    p = sub.add_parser("extract-knowledge", help="Extract repo knowledge to Obsidian vault")
+    p.set_defaults(func=cmd_extract_knowledge)
 
     args = parser.parse_args()
     if not args.command:
