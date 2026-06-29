@@ -15,6 +15,8 @@ if not vault.exists():
 agent_dir = vault / "_farewell-agent"
 agent_dir.mkdir(exist_ok=True)
 (agent_dir / ".gitkeep").write_text("")
+ecc_dir = agent_dir / "ecc"
+ecc_dir.mkdir(exist_ok=True)
 
 # ── CATEGORY MAPPING ──
 CAT_MAP = {
@@ -63,7 +65,7 @@ def extract_ecc():
     print(f"ECC: {len(all_skills)} skills")
 
     # Master index
-    with open(agent_dir / "ECC-Skills-Index.md", "w", encoding="utf-8") as f:
+    with open(ecc_dir / "ECC-Skills-Index.md", "w", encoding="utf-8") as f:
         f.write("# ECC Skills Index\n\n")
         f.write(f"Total: **{len(all_skills)} skills** -- dari [affaan-m/ECC](https://github.com/affaan-m/ECC)\n\n")
         f.write("| # | Skill | Description | Tags |\n")
@@ -90,7 +92,7 @@ def extract_ecc():
         grouped.setdefault(key, []).append(s)
 
     for gname, skills in sorted(grouped.items()):
-        path = agent_dir / f"{gname}.md"
+        path = ecc_dir / f"{gname}.md"
         label = gname.replace("-", " / ").replace("ECC", "ECC")
         with open(path, "w", encoding="utf-8") as f:
             f.write(f"# {label}\n\n{len(skills)} skills\n\n")
@@ -112,7 +114,7 @@ def extract_ecc():
             continue
         text = src.read_text(encoding="utf-8", errors="ignore")
         clean = re.sub(r"^---\s*\n.*?\n---\s*\n", "", text, flags=re.DOTALL).strip()
-        with open(agent_dir / f"{s['slug']}.md", "w", encoding="utf-8") as f:
+        with open(ecc_dir / f"{s['slug']}.md", "w", encoding="utf-8") as f:
             f.write(f"# {s['name']}\n\n")
             f.write(f"Source: `ecc/skills/{s['slug']}/SKILL.md`\n\n---\n\n")
             f.write(clean[:3000])
@@ -199,26 +201,57 @@ def extract_9router():
     print("  -> 9router.md written")
 
 
+def extract_hermes():
+    """Extract Hermes Agent docs."""
+    hermes_dir = config.HERMES_DIR
+    if hermes_dir.exists():
+        readme = hermes_dir / "README.md"
+        if readme.exists():
+            text = readme.read_text(encoding="utf-8", errors="ignore")[:4000]
+            with open(agent_dir / "hermes-agent.md", "w", encoding="utf-8") as f:
+                f.write("# Hermes Agent -- Self-Improving AI Agent\n\n")
+                f.write("Repo: https://github.com/NousResearch/hermes-agent (205k stars)\n\n---\n\n")
+                f.write(text)
+
+    se_dir = config.HERMES_SE_DIR
+    if se_dir.exists():
+        readme = se_dir / "README.md"
+        plan = se_dir / "PLAN.md"
+        if readme.exists():
+            text = readme.read_text(encoding="utf-8", errors="ignore")[:3000]
+            with open(agent_dir / "hermes-self-evolution.md", "w", encoding="utf-8") as f:
+                f.write("# Hermes Agent Self-Evolution\n\n")
+                f.write("Repo: https://github.com/NousResearch/hermes-agent-self-evolution (4.4k stars)\n\n---\n\n")
+                f.write(text)
+        if plan.exists():
+            plan_text = plan.read_text(encoding="utf-8", errors="ignore")[:5000]
+            with open(agent_dir / "hermes-self-evolution.md", "a", encoding="utf-8") as f:
+                f.write("\n\n## PLAN.md (architecture)\n\n")
+                f.write(plan_text)
+
+    print("  -> hermes-agent.md + hermes-self-evolution.md written")
+
+
 def write_master_index():
     """Write master index linking all knowledge bases."""
     lines = [
         "# Farewell Agent -- Knowledge Base",
         "",
-        "Selamat datang di knowledge base AI kamu! Ini hasil ekstraksi dari 3 repo utama:",
+        "Selamat datang di knowledge base AI kamu! Ini hasil ekstraksi dari semua repo terkait:",
         "",
         "## ECC Skills (271 skills)",
         "",
         "| File | Isi |",
         "|------|-----|",
-        "| [[ECC-Skills-Index]] | Daftar lengkap 271 skills |",
-        "| [[ECC-Python]] | Python, Django, FastAPI |",
-        "| [[ECC-Flutter]] | Flutter, Dart |",
-        "| [[ECC-Frontend]] | React, NextJS, Vue |",
-        "| [[ECC-Backend]] | NodeJS, Go, Rust, Kotlin, Swift |",
-        "| [[ECC-DevOps]] | Docker, K8s, Database |",
-        "| [[ECC-Workflow]] | Git, TDD, Coding Standards |",
-        "| [[ECC-Security]] | Security review, Verification |",
-        "| [[ECC-Other]] | Uncategorized skills |",
+        "| [[ecc/ECC-Skills-Index]] | Daftar lengkap 271 skills |",
+        "| [[ecc/ECC-Python]] | Python, Django, FastAPI |",
+        "| [[ecc/ECC-Flutter]] | Flutter, Dart |",
+        "| [[ecc/ECC-Frontend]] | React, NextJS, Vue |",
+        "| [[ecc/ECC-Backend]] | NodeJS, Go, Rust, Kotlin, Swift |",
+        "| [[ecc/ECC-DevOps]] | Docker, K8s, Database |",
+        "| [[ecc/ECC-Workflow]] | Git, TDD, Coding Standards |",
+        "| [[ecc/ECC-Security]] | Security review, Verification |",
+        "| [[ecc/ECC-Other]] | Uncategorized skills |",
         "",
         "## awesome-opencode",
         "",
@@ -231,6 +264,13 @@ def write_master_index():
         "| File | Isi |",
         "|------|-----|",
         "| [[9router]] | LLM Router docs + active combos |",
+        "",
+        "## Hermes Agent (205k stars)",
+        "",
+        "| File | Isi |",
+        "|------|-----|",
+        "| [[hermes-agent]] | Self-improving AI agent overview |",
+        "| [[hermes-self-evolution]] | Evolutionary skill optimization (DSPy+GEPA) |",
         "",
         "---",
         "*Generated by farewell-agent extract-knowledge*",
@@ -247,5 +287,6 @@ if __name__ == "__main__":
     extract_ecc()
     extract_awesome()
     extract_9router()
+    extract_hermes()
     write_master_index()
     print(f"\nDone! Files in: {agent_dir}\n")

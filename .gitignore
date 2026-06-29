@@ -48,3 +48,7 @@ Desktop.ini
 
 # Execution traces (local)
 .farewell/trace-log.csv
+
+# Hermes references (cloned, not ours)
+/hermes-agent/
+/hermes-agent-self-evolution/

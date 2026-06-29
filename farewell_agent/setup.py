@@ -1,4 +1,4 @@
-"""Setup — clone 9Router, ECC, and awesome-opencode dependencies."""
+"""Setup — clone dependency repos (routers, skills, registries, references)."""
 
 import subprocess, sys, time
 from pathlib import Path
@@ -9,6 +9,8 @@ REPOS = [
     ("9Router", config.ROUTER_DIR, "https://github.com/decolua/9router.git", "master"),
     ("ECC", config.ECC_DIR, "https://github.com/affaan-m/ECC.git", "main"),
     ("awesome-opencode", config.AWESOME_DIR, "https://github.com/awesome-opencode/awesome-opencode.git", "main"),
+    ("Hermes Agent", config.HERMES_DIR, "https://github.com/NousResearch/hermes-agent.git", "main"),
+    ("Hermes Self-Evolution", config.HERMES_SE_DIR, "https://github.com/NousResearch/hermes-agent-self-evolution.git", "main"),
 ]
 
 def run():
