@@ -28,8 +28,10 @@ def render():
     worker = resolved["worker"]
 
     provider_models = set(combos)
+    skip_keys = {"NINEROUTER_API_KEY", "OBSIDIAN_VAULT"}
     for k, v in models.items():
-        if k != "NINEROUTER_API_KEY" and v and k not in combos:
+        if k in skip_keys: continue
+        if v and k not in combos:
             for m in v.split(","):
                 m = m.strip()
                 if m: provider_models.add(m)

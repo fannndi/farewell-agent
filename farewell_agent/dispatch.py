@@ -1,6 +1,7 @@
 """Enhanced dispatch — session continuity + context enrichment + learning loop."""
 
-import json, shutil, subprocess, sys, time
+import json, shutil, subprocess, socket, sys, time
+from pathlib import Path
 from . import config
 from .state.registry import get_active, get_code, get_path
 from .state.memory import save_session, load_session
@@ -16,8 +17,20 @@ from .helpers import ok, info, fail
 from .cost import write_trace
 from . import obsidian
 
+def verify_router() -> bool:
+    """Check if 9Router port 20128 is reachable."""
+    try:
+        with socket.create_connection(("127.0.0.1", 20128), timeout=3):
+            return True
+    except (socket.timeout, ConnectionRefusedError, OSError):
+        return False
+
+
 def run(task: str):
     t0 = time.time()
+    if not verify_router():
+        fail("9Router (port 20128) is not responding. Start it first.")
+        sys.exit(1)
 
     opencode_path = shutil.which("opencode")
     if not opencode_path:
@@ -94,17 +107,16 @@ def run(task: str):
         info(f"Continuing OpenCode session {mem['session_id'][:12]}...")
 
     model_str = f"9router/{resolved['leader']}"
-    cmd = [
-        opencode_path, "run", enriched_task,
-        "--agent", agent,
-        "--model", model_str,
-        "--format", "json",
-    ]
-    if project_path:
-        cmd += ["--dir", project_path]
+
+    # Build command string for shell=True (opencode.CMD needs cmd.exe context)
+    task_quoted = enriched_task.replace('"', '\\"')
+    parts = [f'"{opencode_path}"', "run", f'"{task_quoted}"', "--agent", agent, "--model", model_str, "--format", "json"]
+    if project_path and str(config.ROOT_DIR.resolve()) != str(Path(project_path).resolve()):
+        parts += ["--dir", f'"{project_path}"']
     if session_args:
-        cmd += session_args
-    cmd += ["--title", f"farewell-agent: {task[:60]}"]
+        parts += session_args
+    parts += ["--title", f'"farewell-agent: {task[:60]}"']
+    cmd_str = " ".join(parts)
 
     info(f"Exec: opencode run --agent {agent} --model {model_str}")
 
@@ -115,17 +127,19 @@ def run(task: str):
     summary = f"Ran: {task[:80]}"
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        result = subprocess.run(cmd_str, capture_output=True, timeout=600, shell=True)
         duration = time.time() - t0
+        out_text = result.stdout.decode("utf-8", errors="replace")
+        err_text = result.stderr.decode("utf-8", errors="replace") if result.stderr else ""
 
         if result.returncode != 0:
-            fail(f"OpenCode failed: {result.stderr[:300]}")
-            end_session(code, active, session_id, "failed", None, f"Failed: {result.stderr[:100]}")
-            write_trace(f"{code}-{active}", task_class, agent, resolved["leader"], False, f"Failed: {result.stderr[:100]}", duration)
+            fail(f"OpenCode failed: {err_text[:300]}")
+            end_session(code, active, session_id, "failed", None, f"Failed: {err_text[:100]}")
+            write_trace(f"{code}-{active}", task_class, agent, resolved["leader"], False, f"Failed: {err_text[:100]}", duration)
             return
 
         try:
-            response = json.loads(result.stdout)
+            response = json.loads(out_text)
             new_session_id = response.get("session_id") or response.get("session", {}).get("id")
         except json.JSONDecodeError:
             new_session_id = None

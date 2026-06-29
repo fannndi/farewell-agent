@@ -144,7 +144,7 @@
       "description": "Frontend audit",
       "mode": "subagent",
       "model": "9router/${WORKER}",
-      "prompt": "{file:ecc/.opencode/prompts/agents/typescript-reviewer.txt}",
+      "prompt": "{file:ecc/.opencode/prompts/agents/python-reviewer.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     }
   },

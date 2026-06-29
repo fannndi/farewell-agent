@@ -175,31 +175,31 @@ def _run_agent(agent: str, task: str):
 
     render_config()
 
-    cmd = [
-        opencode_path, "run", enriched_task,
-        "--agent", agent,
-        "--format", "json",
-    ]
-    if project_path:
-        cmd += ["--dir", project_path]
+    task_quoted = enriched_task.replace('"', '\\"')
+    parts = [f'"{opencode_path}"', "run", f'"{task_quoted}"', "--agent", agent, "--format", "json"]
+    from pathlib import Path as _Path
+    if project_path and str(_Path(project_path).resolve()) != str(config.ROOT_DIR.resolve()):
+        parts += ["--dir", f'"{project_path}"']
+    cmd_str = " ".join(parts)
 
     info(f"Agent: {agent}")
     print(f"\n  {c('='*40, 'gray')}\n")
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        result = subprocess.run(cmd_str, capture_output=True, timeout=600, shell=True)
+        out_text = result.stdout.decode("utf-8", errors="replace")
+        err_text = result.stderr.decode("utf-8", errors="replace") if result.stderr else ""
         if result.returncode == 0:
-            # Print output (skip raw JSON)
             try:
-                resp = json.loads(result.stdout)
+                resp = json.loads(out_text)
                 text = resp.get("text") or resp.get("content", "")
                 if text:
                     print(text[:2000])
             except (json.JSONDecodeError, AttributeError):
-                print(result.stdout[:2000])
+                print(out_text[:2000])
             ok(f"{agent} completed")
         else:
-            fail(f"{agent} failed: {result.stderr[:200]}")
+            fail(f"{agent} failed: {err_text[:200]}")
     except subprocess.TimeoutExpired:
         fail(f"{agent} timed out (600s)")
     except Exception as e:
