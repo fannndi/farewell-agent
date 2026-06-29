@@ -44,7 +44,12 @@ def cmd_status(args):
         from .obsidian import is_configured, vault_path
         ob_flag = f" | Obsidian: {vault_path()}" if is_configured() else ""
     except Exception: ob_flag = ""
-    print(f"\n  {c(f'Farewell: ON | {code}-{active} | {mode.upper()}{sk}{ao}{bgt}{mem_flag}{ob_flag} | {team}', 'cyan')}\n")
+    try:
+        from .learn import insights as learn_insights
+        ins = learn_insights(code, active)
+        ins_flag = f" | {ins}" if ins else ""
+    except Exception: ins_flag = ""
+    print(f"\n  {c(f'Farewell: ON | {code}-{active} | {mode.upper()}{sk}{ao}{bgt}{mem_flag}{ob_flag}{ins_flag} | {team}', 'cyan')}\n")
 
 def cmd_project(args):
     from .state.registry import list_all, load, save
@@ -277,6 +282,41 @@ def cmd_cost(args):
             print("  (no traces yet — run a task first)")
         print()
 
+def cmd_sessions(args):
+    """Show session history for current project."""
+    from .state.registry import get_active, get_code
+    from .state.session import recent_sessions, last_session
+    from .learn import insights as learn_insights
+    from .helpers import info
+    active = get_active()
+    code = get_code(active)
+    if args.action == "list":
+        sessions = recent_sessions(code, active, 10)
+        if not sessions:
+            print("  No sessions yet. Run a task first.")
+            return
+        print(f"\n  [Sessions] ({len(sessions)}):")
+        for s in reversed(sessions):
+            dur = ""
+            if s.get("started_at") and s.get("ended_at"):
+                try:
+                    from datetime import datetime
+                    start = datetime.fromisoformat(s["started_at"])
+                    end = datetime.fromisoformat(s["ended_at"])
+                    dur = f" ({(end-start).seconds}s)"
+                except: pass
+            ico = {"completed": "[OK]", "failed": "[FAIL]", "timeout": "[!]"} .get(s["status"], "[-]")
+            cls = s.get("task_class", "") or ""
+            tag = f" [{cls}]" if cls else ""
+            print(f"  {ico} {s['task'][:60]}{tag}{dur} — {s['status']}")
+        print()
+    elif args.action == "insights":
+        ins = learn_insights(code, active)
+        if ins:
+            print(f"\n  [Stats] {ins}\n")
+        else:
+            print("  No task data yet.\n")
+
 def cmd_extract_knowledge(args):
     """Extract ECC, awesome-opencode, 9Router knowledge to Obsidian vault."""
     try:
@@ -419,6 +459,10 @@ def main():
     p = sub.add_parser("cost", help="Token usage & budget")
     p.add_argument("action", nargs="?", default="status", choices=["status"])
     p.set_defaults(func=cmd_cost)
+
+    p = sub.add_parser("sessions", help="View session history and insights")
+    p.add_argument("action", nargs="?", default="list", choices=["list", "insights"])
+    p.set_defaults(func=cmd_sessions)
 
     p = sub.add_parser("extract-knowledge", help="Extract repo knowledge to Obsidian vault")
     p.set_defaults(func=cmd_extract_knowledge)
