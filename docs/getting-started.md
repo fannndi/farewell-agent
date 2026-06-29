@@ -20,6 +20,13 @@ pip install pyyaml
 
 ## Quick Start — First Time
 
+### 0. Clone dependencies
+
+```bash
+py -m farewell_agent setup
+```
+Ini clone 3 repo penting: **9Router** (LLM proxy), **ECC** (271 skills), **awesome-opencode** (plugin registry).
+
 ### 1. Prepare config
 
 Copy the example API key file and fill in your model keys:

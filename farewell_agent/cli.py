@@ -13,6 +13,10 @@ def cmd_team(args):
     if args.action == "status": status()
     else: switch(args.action)
 
+def cmd_setup(args):
+    from .setup import run as setup_run
+    setup_run()
+
 def cmd_daily(args):
     from .daily import run
     run()
@@ -348,6 +352,9 @@ def main():
 
     p = sub.add_parser("status", help="Show state")
     p.set_defaults(func=cmd_status)
+
+    p = sub.add_parser("setup", help="Clone dependencies: 9Router, ECC, awesome-opencode")
+    p.set_defaults(func=cmd_setup)
 
     p = sub.add_parser("daily", help="Start 9Router + sync + readiness")
     p.set_defaults(func=cmd_daily)

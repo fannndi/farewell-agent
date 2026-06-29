@@ -28,8 +28,11 @@ Satu tool untuk ngatur skill, memory, model routing — biar kamu tinggal bilang
 git clone https://github.com/fannndi/farewell-agent.git
 cd farewell-agent
 
-# Install deps
+# Install Python deps
 pip install pyyaml
+
+# Clone dependencies (9Router, ECC, awesome-opencode)
+py -m farewell_agent setup
 
 # Copy config contoh
 cp .api-key.example.txt api-key.txt
@@ -90,6 +93,7 @@ py -m farewell_agent cost status
 
 | Command | Fungsi |
 |---------|--------|
+| `setup` | Clone dependencies: 9Router, ECC, awesome-opencode |
 | `daily` | Start 9Router + sync upstream + readiness |
 | `run "<task>"` | **Entry point utama** — classify → route → execute |
 | `setup-project <path>` | Register project + inject `.farewell/` |
