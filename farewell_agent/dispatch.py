@@ -270,7 +270,7 @@ def _run_team_workflow(enriched_task: str, task: str, code: str, active: str,
     import subprocess, json, time as _time
 
     t0 = _time.time()
-    worker_model = resolved["worker"].split(",")[0].strip()
+    worker_model = resolved["resolved"]
     worker_str = f"9router/{worker_model}"
 
     step("TEAM", f"Orchestrator {resolved['model_key']} -> WORKER")
