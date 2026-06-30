@@ -71,15 +71,16 @@ def run(task: str, model_override: str | None = None):
     project_path = get_path(active)
 
     # --- 1. Intent classification (workflow + task) ---
-    wf, task_class = classify(task)
-    if wf:
-        # High-level workflow detected -- delegate to workflow orchestrator
-        info(f"Workflow: {wf}")
-        from .workflow import run_workflow
-        run_workflow(wf, task)
-        return
-    if task_class:
-        info(f"Intent: {task_class}")
+    wf, task_class = None, None
+    if not model_override:
+        wf, task_class = classify(task)
+        if wf:
+            info(f"Workflow: {wf}")
+            from .workflow import run_workflow
+            run_workflow(wf, task)
+            return
+        if task_class:
+            info(f"Intent: {task_class}")
 
     # --- 2. Model + agent resolution ---
     work_mode = current_mode()
@@ -140,10 +141,7 @@ WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, resp
 
     # --- 7a. Team workflow (orchestrator → planner → executor) ---
     if resolved.get("agent") == "team" and work_mode == "build":
-        import sys as _sys
-        print(f"  [DEBUG] team: agent={resolved['agent']!r} mode={work_mode!r} key={resolved['model_key']!r}", file=_sys.stderr)
         _run_team_workflow(enriched_task, task, code, active, resolved, project_path, session_id)
-        print("  [DEBUG] team workflow returned OK", file=_sys.stderr)
         lock.unlink(missing_ok=True)
         return
 
