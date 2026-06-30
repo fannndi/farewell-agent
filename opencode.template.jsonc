@@ -32,150 +32,150 @@
 
   "agent": {
     "build": {
-      "description": "Primary coding agent",
+      "description": "Primary coding agent (fallback untuk model non-org)",
       "mode": "primary",
       "model": "9router/${LEADER}",
       "tools": { "write": true, "edit": true, "bash": true, "read": true, "changed-files": true }
     },
     "team": {
-      "description": "Team orchestrator — delegasi ke subagent",
+      "description": "Orchestrator — delegasi, bukan eksekusi",
       "mode": "primary",
       "model": "9router/${SPECIAL}",
       "prompt": "{file:.opencode/prompts/team-orchestrator.txt}",
-      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+      "tools": { "read": true, "bash": true }
     },
     "director": {
-      "description": "Director AI — strategic decisions, final review",
+      "description": "Director AI — strategic review",
       "mode": "subagent",
       "model": "9router/${LEADER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
-      "tools": { "read": true, "bash": true, "write": true, "edit": true }
+      "tools": { "read": true, "bash": true }
     },
     "deputy-director": {
-      "description": "Deputy Director AI — validation, second opinion",
+      "description": "Deputy Director AI — validation",
       "mode": "subagent",
       "model": "9router/${LEADER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/architect.txt}",
-      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+      "tools": { "read": true, "bash": true }
     },
     "senior-engineer": {
-      "description": "Senior Backend Engineer — eksekusi teknis",
+      "description": "Executor — nulis kode",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:.opencode/prompts/senior-engineer.txt}",
-      "tools": { "write": true, "edit": true, "bash": true, "read": true }
+      "tools": { "write": true, "edit": true, "bash": true }
     },
     "junior-reviewer": {
       "description": "Junior Reviewer — validasi kode",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:.opencode/prompts/junior-reviewer.txt}",
-      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+      "tools": { "read": true, "bash": true }
     },
     "planner": {
       "description": "Planning specialist",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
-      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+      "tools": { "read": true, "bash": true }
     },
     "architect": {
       "description": "Architecture specialist",
       "mode": "subagent",
       "model": "9router/${SPECIAL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/architect.txt}",
-      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+      "tools": { "read": true, "bash": true }
     },
     "code-reviewer": {
       "description": "Code review specialist",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/code-reviewer.txt}",
-      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+      "tools": { "read": true, "bash": true }
     },
     "security-reviewer": {
       "description": "Security specialist",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/security-reviewer.txt}",
-      "tools": { "read": true, "write": true, "edit": true, "bash": true }
+      "tools": { "read": true, "bash": true }
     },
     "tdd-guide": {
       "description": "TDD specialist",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/tdd-guide.txt}",
-      "tools": { "read": true, "write": true, "edit": true, "bash": true }
+      "tools": { "read": true, "bash": true }
     },
     "build-error-resolver": {
       "description": "Build error specialist",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/build-error-resolver.txt}",
-      "tools": { "read": true, "write": true, "edit": true, "bash": true }
+      "tools": { "write": true, "edit": true, "bash": true }
     },
     "doc-updater": {
       "description": "Documentation specialist",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/doc-updater.txt}",
-      "tools": { "read": true, "write": true, "edit": true, "bash": true }
+      "tools": { "write": true, "edit": true, "bash": true }
     },
     "python-reviewer": {
       "description": "Python code review",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/python-reviewer.txt}",
-      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+      "tools": { "read": true, "bash": true }
     },
     "typescript-reviewer": {
       "description": "TypeScript/JS code review",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/python-reviewer.txt}",
-      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+      "tools": { "read": true, "bash": true }
     },
     "database-reviewer": {
       "description": "SQL/schema review",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/database-reviewer.txt}",
-      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+      "tools": { "read": true, "bash": true }
     },
     "docs-lookup": {
       "description": "Documentation lookup",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/docs-lookup.txt}",
-      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+      "tools": { "read": true, "bash": true }
     },
     "refactor-cleaner": {
       "description": "Dead code & refactoring",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/refactor-cleaner.txt}",
-      "tools": { "read": true, "write": true, "edit": true, "bash": true }
+      "tools": { "write": true, "edit": true, "bash": true }
     },
     "ketua-tim": {
       "description": "Lead — teknis, koordinasi",
       "mode": "subagent",
       "model": "9router/${SPECIAL}",
       "prompt": "{file:.opencode/prompts/team-orchestrator.txt}",
-      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+      "tools": { "read": true, "bash": true }
     },
     "backend-reviewer": {
       "description": "Backend audit",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/python-reviewer.txt}",
-      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+      "tools": { "read": true, "bash": true }
     },
     "frontend-reviewer": {
       "description": "Frontend audit",
       "mode": "subagent",
       "model": "9router/${WORKER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/python-reviewer.txt}",
-      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+      "tools": { "read": true, "bash": true }
     }
   },
 

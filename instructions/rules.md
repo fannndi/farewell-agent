@@ -2,7 +2,7 @@
 
 ## Modes
 - **PLAN**: read-only (Read/Glob/Grep only). No Bash write/edit.
-- **BUILD**: full access. Orchestrator with team delegation.
+- **BUILD**: full access. Orchestrator delegates to read/write-only agents.
 
 ## Golden Rule: Always Consult Buku Panduan
 
@@ -21,10 +21,10 @@ Gunakan `farewell-agent cari <topik>` untuk mencari manual, atau `farewell-agent
 - Both injected as frozen snapshot at session start
 - Edit via `farewell-agent memory`
 
-## Team Model Resolution
+## Model Resolution
 - `api-key.txt` defines model keys (LEADER_1, SPECIAL, WORKER, etc.)
-- `roles.json` maps tier + task-override → model key
-- Never hardcode model names in code
+- `roles.json` maps model key → role + agent (orchestrator/executor/planner)
+- Strong read/write separation: orchestrator/planner = read-only, executor = write-only
 
 ## Execution
 - NEW task → HOLD → PLAN → APPROVE → execute

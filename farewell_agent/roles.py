@@ -1,5 +1,5 @@
-import json
-from pathlib import Path
+"""Model resolution — resolve model keys to roles, check org registry."""
+
 from . import config
 from .state.io import read_json
 
@@ -7,29 +7,29 @@ _CONFIG_CACHE = None
 _COMBO_CACHE = None
 
 PLAN_AGENTS = {
-    "default": "team",
+    "default": "planner",
     "audit": "architect",
     "learn": "planner",
-    "research": "planner",
-    "feature": "team",
-    "fix": "team",
-    "refactor": "team",
+    "research": "docs-lookup",
+    "feature": "planner",
+    "fix": "planner",
+    "refactor": "planner",
     "health": "build",
 }
 
 AGENT_MAP = {
-    "security-review": "security-reviewer",
-    "verification-loop": "tdd-guide",
-    "self-heal": "build-error-resolver",
-    "deploy": "senior-engineer",
-    "rust-debug": "senior-engineer",
-    "kotlin-debug": "senior-engineer",
-    "code-review": "junior-reviewer",
-    "review": "junior-reviewer",
-    "architecture": "architect",
-    "plan": "planner",
-    "research": "docs-lookup",
-    "default": "build",
+    "security-review":     "security-reviewer",
+    "verification-loop":   "tdd-guide",
+    "self-heal":           "build-error-resolver",
+    "deploy":              "senior-engineer",
+    "rust-debug":          "senior-engineer",
+    "kotlin-debug":        "senior-engineer",
+    "code-review":         "junior-reviewer",
+    "review":              "junior-reviewer",
+    "architecture":        "architect",
+    "plan":                "planner",
+    "research":            "docs-lookup",
+    "default":             "build",
 }
 
 def _load_config():
@@ -64,11 +64,45 @@ def invalidate_cache():
     _CONFIG_CACHE = None
     _COMBO_CACHE = None
 
-def resolve_for_tier(tier: str, task_class: str | None = None) -> dict:
+def is_org(model_key: str) -> bool:
     roles = read_json(config.ROLES_FILE) or {}
-    tiers = roles.get("tiers", {})
+    registry = roles.get("org_registry", [])
+    return model_key in registry
+
+def resolve_model(model_key: str) -> dict:
+    roles = read_json(config.ROLES_FILE) or {}
+    resolve = roles.get("resolve", {})
+    cfg = _load_config()
+    combos = _load_combo_names()
+
+    entry = resolve.get(model_key, {})
+    role = entry.get("role", "executor")
+    agent = entry.get("agent", "build")
+
+    raw_val = cfg.get(model_key, model_key.lower())
+    resolved_model = _alias(model_key, raw_val, combos)
+    raw_worker = cfg.get("WORKER", "WORKER")
+    worker_model = _alias("WORKER", raw_worker, combos)
+
+    return {
+        "model_key": model_key,
+        "resolved": resolved_model,
+        "role": role,
+        "agent": agent,
+        "worker": worker_model,
+    }
+
+def resolve_agent(task_class: str | None, work_mode: str, model_key: str | None = None) -> str:
+    if work_mode == "plan":
+        return PLAN_AGENTS.get(task_class or "default", "planner")
+    if model_key and not is_org(model_key):
+        return "build"
+    return AGENT_MAP.get(task_class or "", AGENT_MAP.get("default", "build"))
+
+def resolve_for_tier(tier: str, task_class: str | None = None) -> dict:
+    """Deprecated — kept for sync.py compat. Maps tier to model keys."""
+    roles = read_json(config.ROLES_FILE) or {}
     overrides = roles.get("task_overrides", {})
-    tier_config = tiers.get(tier, tiers.get("tim", {}))
     cfg = _load_config()
     combos = _load_combo_names()
 
@@ -77,39 +111,19 @@ def resolve_for_tier(tier: str, task_class: str | None = None) -> dict:
     else:
         worker_key = "worker_default"
 
-    def _resolve(key: str) -> str:
-        if key == "worker_default":
-            k = tier_config.get("worker_default", "WORKER")
-        elif key == "worker_pro":
-            k = tier_config.get("worker_pro", "WORKER_PRO")
-        else:
-            k = tier_config.get(key, "SPECIAL")
+    tier_map = {"divisi": "LEADER_1", "tim": "SPECIAL", "bawahan": "WORKER"}
+    leader_key = tier_map.get(tier, "SPECIAL")
+    special_key = "SPECIAL"
+    worker_key_actual = {"worker_default": "WORKER", "worker_pro": "WORKER_PRO"}.get(worker_key, "WORKER")
+
+    def _r(k):
         val = cfg.get(k, k.lower())
         return _alias(k, val, combos)
 
-    result = {
-        "leader": _resolve("leader"),
-        "special": _resolve("special"),
-        "worker": _resolve(worker_key),
+    return {
+        "leader": _r(leader_key),
+        "special": _r(special_key),
+        "worker": _r(worker_key_actual),
         "tier": tier,
-        "task_class": task_class,
+        "task_class": task_class or "",
     }
-
-    # Auto-tune: override with task_model_preferences if available
-    if roles.get("auto_tune") and task_class:
-        prefs = roles.get("task_model_preferences", {})
-        if task_class in prefs:
-            preferred_key = prefs[task_class].get("model", "")
-            tier_to_key = {"LEADER_1": "leader", "LEADER_2": "leader",
-                          "SPECIAL": "special", "WORKER": "worker", "WORKER_PRO": "worker"}
-            mapped = tier_to_key.get(preferred_key)
-            if mapped and mapped in result:
-                result["preferred"] = result[mapped]
-                result["preferred_reason"] = prefs[task_class].get("reason", "")
-
-    return result
-
-def resolve_agent(task_class: str | None, work_mode: str) -> str:
-    if work_mode == "plan":
-        return PLAN_AGENTS.get(task_class or "default", "team")
-    return AGENT_MAP.get(task_class or "", AGENT_MAP.get("default", "build"))

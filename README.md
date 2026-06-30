@@ -1,21 +1,35 @@
 # Farewell Agent
 
-> Kamu punya asisten pribadi yang bisa ngomong sama AI buat kamu.
+> Asisten pribadi yang ngomong sama AI buat kamu.
 
 ---
 
-## Cerita Singkat
+## Cara Kerja
 
-Bayangin kamu punya **teman yang ngerti teknologi**. Kamu bilang "bikin sesuatu" — dia tahu maksud kamu, nanya detail yang kurang, ngobrol sama AI model yang tepat, lalu kasih kamu jawaban yang rapi + saran langkah selanjutnya.
+Farewell Agent punya **2 mode**:
 
-**Itu Farewell Agent.**
+| Mode | Bisa apa? | Agent |
+|------|-----------|-------|
+| **plan** | Baca kode, riset, rencanain. **No write.** | Planner, Architect |
+| **build** | Nulis kode, fix bug, deploy. **Full akses.** | Orchestrator -> Executor |
 
-Dia duduk di antara kamu dan AI model. Setiap kali kamu kasih tugas, dia:
-1. **Ngerapiin** perintah kamu biar jelas
-2. **Nambahin konteks** dari catatan project sebelumnya
-3. **Kirim** ke AI model paling cocok
-4. **Ngecek** jawaban AI — selalu ada FOOTER biar kamu tahu project apa, sesi apa, dan harus ngapain selanjutnya
-5. **Belajar** dari setiap interaksi — makin sering dipake, makin pinter
+## Siapa Siapa
+
+```
+LEADER_1 / SPECIAL  ───→  Orchestrator (read-only, delegasi)
+WORKER              ───→  Planner (read-only) / Executor (write-only)
+Free_Chat / lain    ───→  Build fallback (single agent)
+```
+
+Cuma model yang terdaftar di **Org Registry** yang dapet multi-agent:
+```
+fa org
+  Org Registry (4 models):
+    LEADER_1  -> orchestrator
+    LEADER_2  -> orchestrator
+    SPECIAL   -> orchestrator
+    WORKER    -> executor
+```
 
 ---
 
@@ -37,26 +51,62 @@ py -m farewell_agent run "bikin file python hello world"
 
 ---
 
-## Perintah Sehari-hari
+## Perintah
 
 | Kamu bilang | Artinya |
 |-------------|---------|
-| `fa run "buat fitur login"` | Jalanin task ke AI |
-| `fa daily` | Cek kesehatan + update |
-| `fa project` | Lihat project terdaftar |
-| `fa project 001` | Pindah project |
-| `fa status` | Lihat status lengkap |
-| `fa memory show` | Lihat catatan project |
-| `fa memory save "isi catatan"` | Simpan catatan |
-| `fa evolve` | Evolusi — biar makin pinter |
+| `fa run "buat fitur"` | Jalanin task |
+| `fa status` | Lihat status |
+| `fa analyze --suggest` | Liat performa model |
+| `fa org` | Liat org chart |
+| `fa evolve` | Evolusi otomatis |
+| `fa daily` | Cek kesehatan |
+| `fa memory show` | Lihat catatan |
+| `fa memory save "isi"` | Simpan catatan |
 
 Tips: bikin alias `fa` di terminal.
 
 ---
 
+## Setup Org (tambah model sendiri)
+
+Edit `.farewell/roles.json`:
+
+```json
+{
+  "schema_version": 3,
+  "org_registry": ["LEADER_1", "LEADER_2", "SPECIAL", "WORKER", "MODEL_BARU"],
+  "resolve": {
+    "LEADER_1": { "role": "orchestrator", "agent": "team" },
+    "MODEL_BARU": { "role": "executor", "agent": "senior-engineer" }
+  }
+}
+```
+
+Lalu tambah key-nya ke `api-key.txt`:
+```
+MODEL_BARU=oc/model-baru-xyz
+```
+
+Model yang **tidak** di `org_registry` otomatis pake `build` (single agent).
+
+---
+
+## Recovery (proses berhenti di tengah)
+
+Kalau proses crash atau ke Ctrl+C di tengah jalan:
+1. Farewell Agent deteksi lock file sisanya
+2. Session yang kepotong ditandai "interrupted"
+3. Lain kali jalanin task, recovery otomatis
+4. Footer yang hilang artinya proses belum selesai
+
+Manual: tinggal jalanin `fa run` lagi.
+
+---
+
 ## Footer
 
-Setiap jawaban dari AI selalu diakhiri dengan:
+Setiap jawaban AI selalu diakhiri dengan:
 
 ```
 ---
@@ -65,30 +115,23 @@ Project: 001-farewell-agent | Session: a1b2c3
 Next: coba jalankan perintah selanjutnya
 ```
 
-Ini penting biar kamu selalu tahu:
-- **Project apa** yang lagi dikerjain
-- **Sesi** yang sedang berlangsung
-- **Langkah selanjutnya** yang bisa kamu ambil
+**Tidak ada FOOTER = proses belum selesai.**
 
 ---
 
 ## Auto-Evolve
 
-Farewell Agent bisa belajar sendiri. Setiap 10 tugas, dia:
-1. Cek apakah FOOTER selalu muncul
-2. Evaluasi model mana yang paling cocok buat tugas tertentu
-3. Catat pelajaran ke MEMORY.md
+Setiap 10 tugas, Farewell Agent:
+1. Cek footer rate (target 100%)
+2. Evaluasi model mana paling cocok per task class
+3. Update task_model_preferences otomatis
+4. Catat pelajaran ke MEMORY.md + sync ke Obsidian
 
-Jalanin manual kapan aja: `fa evolve`
+Jalanin manual: `fa evolve`
 
 ---
 
 ## Butuh Bantuan?
 
-- `fa cari <topik>` — cari di buku panduan (Obsidian vault)
-- `fa panduan` — buka index buku panduan
+- `fa cari <topik>` — cari di buku panduan
 - `fa --help` — semua perintah
-
----
-
-Dibuat dengan ❤️ biar kamu nggak perlu jadi expert buat pake AI.

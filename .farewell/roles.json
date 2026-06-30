@@ -1,60 +1,25 @@
 {
-  "schema_version": 2,
-  "auto_tune": true,
-  "tiers": {
-    "divisi": {
-      "leader": "LEADER_1",
-      "special": "SPECIAL",
-      "worker_default": "WORKER",
-      "worker_pro": "WORKER_PRO"
-    },
-    "tim": {
-      "leader": "SPECIAL",
-      "special": "SPECIAL",
-      "worker_default": "WORKER",
-      "worker_pro": "WORKER_PRO"
-    },
-    "bawahan": {
-      "leader": "WORKER",
-      "special": "WORKER",
-      "worker_default": "WORKER",
-      "worker_pro": "WORKER_PRO"
-    }
-  },
-  "task_overrides": {
-    "security-review": "worker_pro",
-    "verification-loop": "worker_pro",
-    "self-heal": "worker_pro",
-    "deploy": "worker_pro",
-    "rust-debug": "worker_pro",
-    "kotlin-debug": "worker_pro"
+  "schema_version": 3,
+  "org_registry": ["LEADER_1", "LEADER_2", "SPECIAL", "WORKER"],
+  "resolve": {
+    "LEADER_1": { "role": "orchestrator", "agent": "team" },
+    "LEADER_2": { "role": "orchestrator", "agent": "team" },
+    "SPECIAL":  { "role": "orchestrator", "agent": "team" },
+    "WORKER":   { "role": "executor",   "agent": "senior-engineer" }
   },
   "agent_map": {
-    "security-review": "security-reviewer",
-    "verification-loop": "tdd-guide",
-    "self-heal": "build-error-resolver",
-    "deploy": "build",
-    "rust-debug": "build",
-    "kotlin-debug": "build",
-    "default": "build"
+    "security-review":     "security-reviewer",
+    "verification-loop":   "tdd-guide",
+    "self-heal":           "build-error-resolver",
+    "deploy":              "build",
+    "rust-debug":           "build",
+    "kotlin-debug":         "build",
+    "default":             "build"
   },
-  "plan_agents": [
-    "team",
-    "planner",
-    "docs-lookup"
-  ],
+  "plan_agents": ["planner", "architect", "docs-lookup"],
   "task_model_preferences": {
-    "feature": {
-      "model": "LEADER_1",
-      "reason": "100% success from 20 tasks"
-    },
-    "fix": {
-      "model": "SPECIAL",
-      "reason": "100% success from 10 tasks"
-    },
-    "deploy": {
-      "model": "LEADER_1",
-      "reason": "100% success from 6 tasks"
-    }
+    "feature": {"model": "SPECIAL", "reason": "100% success from 30 tasks"},
+    "fix": {"model": "SPECIAL", "reason": "100% success from 15 tasks"},
+    "deploy": {"model": "LEADER_1", "reason": "100% success from 9 tasks"}
   }
 }

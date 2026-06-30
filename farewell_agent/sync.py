@@ -13,19 +13,17 @@ def render():
         return False
 
     template = template_path.read_text(encoding="utf-8")
-    team_state = _get_team()
     models = _load_config()
     combos = _load_combo_names()
 
-    team_map = {"ON": "divisi", "TIM": "tim", "BAWAHAN": "bawahan"}
-    tier_label = team_map.get(team_state, "tim")
+    from .roles import resolve_model
+    leader_m = resolve_model("LEADER_1")
+    special_m = resolve_model("SPECIAL")
+    worker_m = resolve_model("WORKER")
 
-    from .roles import resolve_for_tier
-    resolved = resolve_for_tier(tier_label)
-
-    leader = resolved["leader"]
-    special = resolved["special"]
-    worker = resolved["worker"]
+    leader = leader_m["resolved"]
+    special = special_m["resolved"]
+    worker = worker_m["resolved"]
 
     provider_models = set(combos)
     skip_keys = {"NINEROUTER_API_KEY", "OBSIDIAN_VAULT"}
@@ -57,14 +55,6 @@ def render():
     tmp.write_text(content, encoding="utf-8")
     tmp.replace(output_path)
     return True
-
-def _get_team() -> str:
-    try:
-        f = config.FAREWELL_DIR / "team.json"
-        if f.exists():
-            return json.loads(f.read_text(encoding="utf-8")).get("team", "TIM")
-    except Exception: pass
-    return "TIM"
 
 def _load_config() -> dict:
     return config.load_env()

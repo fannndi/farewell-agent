@@ -6,13 +6,11 @@ from . import config
 from .state.registry import get_active, get_code, get_path
 from .state.memory import save_session, load_session, save_memory, memory_content
 from .state.session import start_session, end_session, suggest_resume
-from .roles import resolve_for_tier, resolve_agent
 from .intent import classify
 from .context import lookup, is_ready
 from .learn import analyze_completion, insights
 from .workmode import current as current_mode
 from .sync import render as render_config
-from .team import _current as current_team
 from .helpers import ok, info, fail
 from .cost import write_trace
 from . import obsidian
@@ -28,8 +26,30 @@ def verify_router() -> bool:
         return False
 
 
+LOCK_FILE = "dispatch.lock"
+
+def _check_recovery():
+    lock = config.FAREWELL_DIR / LOCK_FILE
+    if lock.exists():
+        stale = lock.read_text(encoding="utf-8").strip()
+        info(f"Recovery: previous dispatch interrupted ({stale[:60]})")
+        from .state.session import end_session, recent_sessions
+        from .state.registry import get_active, get_code
+        active = get_active()
+        code = get_code(active)
+        sessions = recent_sessions(code, active, 1)
+        if sessions and sessions[0].get("status") == "started":
+            end_session(code, active, sessions[0]["id"], "interrupted", None, "Process interrupted - no footer")
+            info("Marked interrupted session as 'interrupted'")
+        lock.unlink(missing_ok=True)
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    return lock
+
+
 def run(task: str):
     t0 = time.time()
+    lock = _check_recovery()
+
     if not verify_router():
         info("9Router not running -- starting automatically...")
         from .daily import _ensure_9router
@@ -63,30 +83,35 @@ def run(task: str):
 
     # --- 2. Model + agent resolution ---
     work_mode = current_mode()
-    team_val = current_team()
-    tier_name = {"ON": "divisi", "TIM": "tim", "BAWAHAN": "bawahan"}.get(team_val, "tim")
-    # Resolve agent dengan konteks tier
-    agent = resolve_agent(task_class, work_mode)
-    resolved = resolve_for_tier(tier_name, task_class)
+    from .roles import is_org, resolve_model, resolve_agent as _resolve_agent
+    agent = _resolve_agent(task_class, work_mode)
+
+    # Determine model key: default LEADER_1, or check for override
+    model_key = "LEADER_1"
+    resolved = resolve_model(model_key)
+    if work_mode != "plan":
+        in_org = is_org(model_key)
+        if not in_org:
+            info(f"Model {model_key} not in org — using build agent")
+            agent = "build"
+        agent = _resolve_agent(task_class, work_mode, model_key)
 
     # --- 3. Plan mode guard ---
-    plan_agents = ["team", "planner", "docs-lookup", "architect"]
-    if work_mode == "plan" and agent not in plan_agents:
+    if work_mode == "plan" and agent not in ["planner", "architect", "docs-lookup"]:
         fail(f"Task '{task_class or 'default'}' needs build mode -- you're in PLAN.")
-        info("Run `farewell-agent workmode build` first.")
-        write_trace(f"{code}-{active}", task_class, agent, resolved["leader"], False, "Blocked by plan mode", time.time() - t0)
+        write_trace(f"{code}-{active}", task_class, agent, resolved["resolved"], False, "Blocked by plan mode", time.time() - t0)
         return
 
     # --- 4. Config sync ---
     render_config()
-    ok(f"Config synced ({agent} @ {resolved['leader']})")
+    ok(f"Config synced ({agent} @ {resolved['resolved']})")
 
     # --- 5. Session management ---
     resume_note = suggest_resume(code, active)
     if resume_note:
         info(resume_note)
 
-    session_id = start_session(code, active, task, agent, resolved["leader"], task_class)
+    session_id = start_session(code, active, task, agent, resolved["resolved"], task_class)
     info(f"Session: {session_id}")
 
     # --- 6. Buku Panduan (always consult guide book before action) ---
@@ -120,10 +145,10 @@ WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, resp
         session_args = ["--continue"]
         info(f"Continuing OpenCode session {mem['session_id'][:12]}...")
 
-    model_for_task = resolved.get("preferred") or resolved["leader"]
+    lock.write_text(f"{task[:100]} | {agent} @ {model_str}", encoding="utf-8")
+
+    model_for_task = resolved["resolved"]
     model_str = f"9router/{model_for_task}"
-    if resolved.get("preferred_reason"):
-        info(f"Model tuned: {model_for_task} ({resolved['preferred_reason']})")
 
     # Build command -- platform aware
     title_safe = task[:60].replace('"', "'").replace("\n", " ")
@@ -159,11 +184,12 @@ WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, resp
 
         if result.returncode != 0:
             evodb.init()
-            evodb.insert_task(f"{code}-{active}", task_class, agent, resolved["leader"],
+            evodb.insert_task(f"{code}-{active}", task_class, agent, resolved["resolved"],
                              footer_ok=False, duration_s=duration, success=False)
             fail(f"OpenCode failed: {err_text[:300]}")
             end_session(code, active, session_id, "failed", None, f"Failed: {err_text[:100]}")
-            write_trace(f"{code}-{active}", task_class, agent, resolved["leader"], False, f"Failed: {err_text[:100]}", duration)
+            write_trace(f"{code}-{active}", task_class, agent, resolved["resolved"], False, f"Failed: {err_text[:100]}", duration)
+            lock.unlink(missing_ok=True)
             return
 
         try:
@@ -181,18 +207,18 @@ WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, resp
         try:
             project_label = f"{code}-{active}"
             evodb.init()
-            evodb.insert_task(project_label, task_class, agent, resolved["leader"],
+            evodb.insert_task(project_label, task_class, agent, resolved["resolved"],
                              raw_input=task, enriched_input=enriched_task,
                              footer_ok=True, duration_s=duration, success=True)
         except Exception:
             pass
 
         # --- 10. Execution trace ---
-        write_trace(f"{code}-{active}", task_class, agent, resolved["leader"], success, summary, duration)
+        write_trace(f"{code}-{active}", task_class, agent, resolved["resolved"], success, summary, duration)
 
         # --- 10. Obsidian note -- always sync from AI output ---
         if obsidian.is_configured():
-            obsidian.write_session_note(code, active, task, agent, resolved["leader"], success, summary)
+            obsidian.write_session_note(code, active, task, agent, resolved["resolved"], success, summary)
             # Sync memory & user profile after each task
             mem_text = memory_content(code, active)
             if mem_text:
@@ -213,14 +239,17 @@ WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, resp
         # --- 12. Context footer ---
         from .cli import write_context_footer
         write_context_footer()
+        lock.unlink(missing_ok=True)
 
     except subprocess.TimeoutExpired:
         duration = time.time() - t0
         end_session(code, active, session_id, "timeout", None, "Timed out (600s)")
-        write_trace(f"{code}-{active}", task_class, agent, resolved["leader"], False, "Timed out", duration)
+        write_trace(f"{code}-{active}", task_class, agent, resolved["resolved"], False, "Timed out", duration)
+        lock.unlink(missing_ok=True)
         fail("OpenCode timed out after 600s")
     except Exception as e:
         duration = time.time() - t0
         end_session(code, active, session_id, "error", None, f"Error: {str(e)[:100]}")
-        write_trace(f"{code}-{active}", task_class, agent, resolved["leader"], False, f"Error: {str(e)[:100]}", duration)
+        write_trace(f"{code}-{active}", task_class, agent, resolved["resolved"], False, f"Error: {str(e)[:100]}", duration)
+        lock.unlink(missing_ok=True)
         fail(f"Dispatch error: {e}")

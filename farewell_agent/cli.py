@@ -8,11 +8,6 @@ def cmd_workmode(args):
     from .workmode import switch
     switch(args.action)
 
-def cmd_team(args):
-    from .team import switch, status
-    if args.action == "status": status()
-    else: switch(args.action)
-
 def cmd_setup(args):
     from .setup import run as setup_run
     setup_run()
@@ -31,7 +26,6 @@ def cmd_status(args):
     active = get_active()
     mode = wm_current()
     code = get_code(active)
-    team = _get_team_label()
     skills = get_skills(code, active)
     sk = f" | Skills: {len(skills)}" if skills else ""
     plugs, themes, ags, projs, res = load_all()
@@ -49,7 +43,7 @@ def cmd_status(args):
         ins = learn_insights(code, active)
         ins_flag = f" | {ins}" if ins else ""
     except Exception: ins_flag = ""
-    print(f"\n  {c(f'Farewell: ON | {code}-{active} | {mode.upper()}{sk}{ao}{bgt}{mem_flag}{ob_flag}{ins_flag} | {team}', 'cyan')}\n")
+    print(f"\n  {c(f'Farewell: ON | {code}-{active} | {mode.upper()}{sk}{ao}{bgt}{mem_flag}{ob_flag}{ins_flag}', 'cyan')}\n")
 
 def cmd_project(args):
     from .state.registry import list_all, load, save
@@ -374,13 +368,6 @@ def cmd_extract_knowledge(args):
         from .helpers import fail
         fail("Extraction failed -- check errors above")
 
-def _get_team_label() -> str:
-    f = config.FAREWELL_DIR / "team.json"
-    if f.exists():
-        t = json.loads(f.read_text(encoding="utf-8")).get("team", "TIM")
-        return {"ON": "Divisi", "TIM": "Tim", "BAWAHAN": "Bawahan"}.get(t, "Tim")
-    return "Tim"
-
 def write_context_footer(project: str | None = None, mode: str | None = None):
     from .state.registry import get_active, get_code, list_all
     from .indexer import get_skills, write_active_skills
@@ -395,7 +382,6 @@ def write_context_footer(project: str | None = None, mode: str | None = None):
     code = get_code(project)
     if code == "???":
         code = "001"
-    team = _get_team_label()
     skills = get_skills(code, project)
     sk = f" | Skills: {len(skills)}" if skills else ""
     of = f" | Mode: {mode.upper()}"
@@ -423,7 +409,6 @@ def write_context_footer(project: str | None = None, mode: str | None = None):
 
     ctx = f"""# State
 Farewell: ON
-Tier: {team}
 Project: {code}-{project}{sk}{of} | Budget: {bgt}
 {mem_ctx}{recs_block}{mem_block}
 """
@@ -501,10 +486,6 @@ def main():
     p = sub.add_parser("workmode", help="Switch work mode")
     p.add_argument("action", nargs="?", default="status", choices=["plan", "build", "status"])
     p.set_defaults(func=cmd_workmode)
-
-    p = sub.add_parser("team", help="Switch team tier")
-    p.add_argument("action", nargs="?", default="status", choices=["divisi", "tim", "bawahan", "status"])
-    p.set_defaults(func=cmd_team)
 
     p = sub.add_parser("status", help="Show state")
     p.set_defaults(func=cmd_status)
