@@ -270,7 +270,7 @@ def _run_team_workflow(enriched_task: str, task: str, code: str, active: str,
     import subprocess, json, time as _time
 
     t0 = _time.time()
-    worker_model = resolved["resolved"]
+    worker_model = resolved["worker"]
     worker_str = f"9router/{worker_model}"
 
     step("TEAM", f"Orchestrator {resolved['model_key']} -> WORKER")
@@ -297,9 +297,9 @@ def _run_team_workflow(enriched_task: str, task: str, code: str, active: str,
         except json.JSONDecodeError:
             return True, r.stdout.decode("utf-8", errors="replace")[:2000]
 
-    # Step 1: Planner
+    # Step 1: Planner (pake build — primary agent)
     _info("Step 1/2: Planner — riset & rencana")
-    plan_ok, plan_text = _run_one("planner", enriched_task + "\n\nBuat rencana implementasi detail: langkah, file, pattern.")
+    plan_ok, plan_text = _run_one("build", enriched_task + "\n\nBuat rencana implementasi detail: langkah, file, pattern.")
     if plan_ok:
         ok("Planner selesai")
     else:
@@ -311,7 +311,7 @@ def _run_team_workflow(enriched_task: str, task: str, code: str, active: str,
     if plan_ok and plan_text:
         exec_prompt += f"\n\nRencana dari planner:\n{plan_text[:1500]}"
     exec_prompt += "\n\nIMPLEMENTASI: Eksekusi rencana di atas."
-    exec_ok, exec_text = _run_one("senior-engineer", exec_prompt)
+    exec_ok, exec_text = _run_one("build", exec_prompt)
 
     duration = _time.time() - t0
     success = exec_ok
