@@ -14,19 +14,22 @@ def _patterns_path(code: str, name: str) -> Path:
     return d / PATTERNS_FILE
 
 def analyze_completion(code: str, name: str, task: str, task_class: str | None, agent: str,
-                        success: bool, duration_s: float, summary: str):
+                        success: bool, duration_s: float, summary: str,
+                        footer_ok: bool = False, raw_input: str = "", enriched_input: str = ""):
     """After a task completes, analyze and suggest memory updates."""
     # 1. Track pattern
     patterns = read_json(_patterns_path(code, name)) or {
         "total": 0, "success": 0, "failed": 0,
         "by_class": {}, "by_agent": {},
-        "last_analysis": None,
+        "footer_ok": 0, "last_analysis": None,
     }
     patterns["total"] += 1
     if success:
         patterns["success"] += 1
     else:
         patterns["failed"] += 1
+    if footer_ok:
+        patterns["footer_ok"] = patterns.get("footer_ok", 0) + 1
 
     cls = task_class or "default"
     patterns.setdefault("by_class", {}).setdefault(cls, {"total": 0, "success": 0})
@@ -40,6 +43,8 @@ def analyze_completion(code: str, name: str, task: str, task_class: str | None, 
         patterns["by_agent"][agent]["success"] += 1
 
     patterns["last_analysis"] = datetime.now(timezone.utc).isoformat()
+    patterns["last_raw_input"] = raw_input[:200] if raw_input else task[:200]
+    patterns["last_enriched"] = enriched_input[:200] if enriched_input else ""
     write_json(_patterns_path(code, name), patterns)
 
     # 2. Suggest MEMORY.md updates based on task
@@ -48,6 +53,16 @@ def analyze_completion(code: str, name: str, task: str, task_class: str | None, 
     # Auto-consolidate memory every 5 successful tasks
     if success and patterns["total"] > 0 and patterns["total"] % 5 == 0:
         _auto_consolidate(code, name, patterns)
+
+    # Auto-evolve every 10 tasks
+    if patterns["total"] > 0 and patterns["total"] % 10 == 0:
+        try:
+            from .evolve import run as evolve_run
+            evo_changes = evolve_run(code, name)
+            for c in evo_changes:
+                suggestions.append(f"[Evolve] {c}")
+        except Exception as e:
+            suggestions.append(f"[Evolve] skipped: {e}")
 
     return suggestions
 

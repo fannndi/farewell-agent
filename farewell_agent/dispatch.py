@@ -16,6 +16,7 @@ from .team import _current as current_team
 from .helpers import ok, info, fail
 from .cost import write_trace
 from . import obsidian
+from .interpreter import refine, ensure_footer
 
 def verify_router() -> bool:
     """Check if 9Router port 20128 is reachable."""
@@ -91,13 +92,13 @@ def run(task: str):
     guide_block = lookup(task)
     if guide_block:
         print(guide_block[:1200])
-        enriched_task = f"{task}\n\n{guide_block}"
     else:
         if is_ready():
             print("  (tidak ada artikel yang cocok di buku panduan)")
         else:
             print("  (buku panduan/Obsidian belum dikonfigurasi)")
-        enriched_task = task
+    enriched_task = refine(task, code, active, guide_block)
+    enriched_task += f"\n\nIMPORTANT: Always end your response with the following FOOTER section:\n---\n### FOOTER\nProject: {code}-{active} | Session: will be provided\nNext: suggest one follow-up action\n"
 
     # --- 7. Build command ---
     session_args = []
@@ -165,7 +166,8 @@ def run(task: str):
             obsidian.write_session_note(code, active, task, agent, resolved["leader"], success, summary)
 
         # --- 11. Learning loop ---
-        suggestions = analyze_completion(code, active, task, task_class, agent, success, duration, summary)
+        suggestions = analyze_completion(code, active, task, task_class, agent, success, duration, summary,
+                                         footer_ok=True, raw_input=task, enriched_input=enriched_task)
         if suggestions:
             print(f"\n  [Learning]:")
             for s in suggestions[:2]:

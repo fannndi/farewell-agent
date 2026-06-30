@@ -428,6 +428,42 @@ Project: {code}-{project}{sk}{of} | Budget: {bgt}
 {mem_ctx}{recs_block}{mem_block}
 """
     (config.STATE_DIR / "context.md").write_text(ctx, encoding="utf-8")
+    footer_inst = f"""# Footer Instruction
+
+IMPORTANT: Always end your response with a FOOTER section in this format:
+
+---
+### FOOTER
+Project: {code}-{project} | Session: <id>
+Next: <one follow-up suggestion>
+
+The FOOTER helps the user know what project context you're working in and what to do next.
+"""
+    (config.STATE_DIR / "footer.md").write_text(footer_inst, encoding="utf-8")
+
+def cmd_evolve(args):
+    from .state.registry import get_active, get_code
+    from .evolve import run as evolve_run
+    active = get_active()
+    code = get_code(active)
+    if args.dry_run:
+        from .learn import _patterns_path
+        from .state.io import read_json
+        patterns = read_json(_patterns_path(code, active))
+        if not patterns:
+            print("  No task data yet. Run some tasks first.")
+            return
+        footer_ok = patterns.get("footer_ok", 0)
+        total = patterns.get("total", 0)
+        print(f"\n  [Evolve --dry-run]")
+        print(f"  Tasks: {total} | Footer rate: {footer_ok}/{total} ({footer_ok/total*100:.0f}%)")
+        print("  Run without --dry-run to apply evolution.\n")
+        return
+    changes = evolve_run(code, active)
+    print(f"\n  [Evolve]")
+    for c in changes:
+        print(f"  {c}")
+    print()
 
 def main():
     # Write footer on startup
@@ -534,6 +570,10 @@ def main():
     p = sub.add_parser("extract-knowledge", help="Extract repo knowledge to Obsidian vault")
     p.set_defaults(func=cmd_extract_knowledge)
 
+    p = sub.add_parser("evolve", help="Run self-evolution analysis")
+    p.add_argument("--dry-run", action="store_true", help="Show analysis without applying changes")
+    p.set_defaults(func=cmd_evolve)
+
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
@@ -541,5 +581,4 @@ def main():
     args.func(args)
     write_context_footer()
 
-if __name__ == "__main__":
-    main()
+

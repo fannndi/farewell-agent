@@ -22,7 +22,8 @@
     ".opencode/context.md",
     "instructions/rules.md",
     ".farewell/context/farewell-agent.md",
-    "ecc/AGENTS.md"
+    "ecc/AGENTS.md",
+    ".opencode/footer.md"
   ],
 
   "skills": {

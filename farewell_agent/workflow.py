@@ -12,6 +12,7 @@ from .state.registry import get_active, get_code, get_path
 from .helpers import step, ok, info, fail, c
 from .sync import render as render_config
 from .context import lookup, is_ready as guide_ready
+from .interpreter import ensure_footer, build_footer
 
 
 def run_workflow(wf: str, task: str):
@@ -173,6 +174,8 @@ def _run_agent(agent: str, task: str):
     else:
         enriched_task = task
 
+    enriched_task += f"\n---\n### FOOTER (required)\nProject: {code}-{active}\nNext: suggest one follow-up action\n"
+
     render_config()
 
     parts = [opencode_path, "run", enriched_task, "--agent", agent, "--format", "json"]
@@ -201,9 +204,11 @@ def _run_agent(agent: str, task: str):
                 resp = json.loads(out_text)
                 text = resp.get("text") or resp.get("content", "")
                 if text:
+                    text = ensure_footer(text, code, active)
                     print(text[:2000])
             except (json.JSONDecodeError, AttributeError):
-                print(out_text[:2000])
+                text = ensure_footer(out_text[:2000], code, active)
+                print(text)
             ok(f"{agent} completed")
         else:
             fail(f"{agent} failed: {err_text[:200]}")
