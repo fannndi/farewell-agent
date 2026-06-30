@@ -1,4 +1,4 @@
-import json, os, shutil, socket, subprocess, time, urllib.request
+import json, shutil, socket, subprocess, time, urllib.request
 from pathlib import Path
 from . import config
 from .helpers import c, step, ok, skip, fail, info
@@ -64,7 +64,7 @@ def _ensure_9router() -> bool:
             (shutil.copytree if item.is_dir() else shutil.copy2)(item, dst / item.name, dirs_exist_ok=True)
     try:
         env_file = router_dir / ".env"
-        data_dir = str(Path(os.environ.get("APPDATA", "")) / "9router")
+        data_dir = str(config._9router_db().parent.parent)
         if env_file.exists():
             for line in env_file.read_text(encoding="utf-8").splitlines():
                 line = line.strip()
@@ -144,7 +144,7 @@ def _check_github_release() -> dict:
 def _load_combos() -> list[dict]:
     try:
         import sqlite3
-        db = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
+        db = config._9router_db()
         if not db.exists(): return []
         conn = sqlite3.connect(str(db))
         cur = conn.execute("SELECT name, kind, models FROM combos")

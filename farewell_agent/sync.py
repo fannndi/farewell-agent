@@ -1,4 +1,4 @@
-import json, os
+import json
 from pathlib import Path
 from . import config
 from .state.io import read_json, write_json
@@ -67,20 +67,12 @@ def _get_team() -> str:
     return "TIM"
 
 def _load_config() -> dict:
-    models = {}
-    f = config.ROOT_DIR / "api-key.txt"
-    if not f.exists(): return models
-    for line in f.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if "=" not in line or line.startswith("#"): continue
-        k, v = line.split("=", 1)
-        models[k.strip()] = v.strip()
-    return models
+    return config.load_env()
 
 def _load_combo_names() -> set[str]:
     try:
         import sqlite3
-        db = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
+        db = config._9router_db()
         if not db.exists(): return set()
         conn = sqlite3.connect(str(db))
         names = {row[0] for row in conn.execute("SELECT name FROM combos")}

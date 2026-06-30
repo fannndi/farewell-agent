@@ -5,15 +5,8 @@ from pathlib import Path
 from . import config
 
 def _vault_path() -> Path | None:
-    """Read OBSIDIAN_VAULT from api-key.txt."""
-    key_file = config.ROOT_DIR / "api-key.txt"
-    if not key_file.exists(): return None
-    for line in key_file.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if line.startswith("OBSIDIAN_VAULT="):
-            p = Path(line.split("=", 1)[1].strip())
-            if p.exists(): return p
-    return None
+    v = config.obsidian_vault("_farewell-agent/projects")
+    return v
 
 def is_configured() -> bool:
     return _vault_path() is not None
@@ -23,7 +16,7 @@ def vault_path() -> str:
     return str(p) if p else ""
 
 def sync_memory(code: str, name: str, content: str, target: str = "memory"):
-    """Write MEMORY.md or USER.md to Obsidian vault."""
+    """Write MEMORY.md or USER.md to Obsidian vault -> projects/{code}-{name}/."""
     vault = _vault_path()
     if not vault: return False
     project_dir = vault / f"{code}-{name}"
@@ -33,7 +26,6 @@ def sync_memory(code: str, name: str, content: str, target: str = "memory"):
     return True
 
 def write_session_note(code: str, name: str, task: str, agent: str, model: str, success: bool, summary: str):
-    """Append a session note to Obsidian vault."""
     vault = _vault_path()
     if not vault: return False
     project_dir = vault / f"{code}-{name}"

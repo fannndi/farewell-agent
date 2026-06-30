@@ -1,4 +1,4 @@
-import json, os, socket, sqlite3, urllib.request
+import json, socket, sqlite3, urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Protocol
@@ -38,7 +38,8 @@ class NineRouterProvider:
         return role_key if role_key in combos else val
 
     def list_combos(self) -> list[dict]:
-        db = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
+        from . import config
+        db = config._9router_db()
         if not db.exists(): return []
         try:
             conn = sqlite3.connect(str(db))
@@ -57,18 +58,11 @@ class NineRouterProvider:
 
     def _load_config(self) -> dict:
         from . import config
-        models = {}
-        f = config.ROOT_DIR / "api-key.txt"
-        if f.exists():
-            for line in f.read_text(encoding="utf-8").splitlines():
-                line = line.strip()
-                if "=" not in line or line.startswith("#"): continue
-                k, v = line.split("=", 1)
-                models[k.strip()] = v.strip()
-        return models
+        return config.load_env()
 
     def _load_combo_names(self) -> set[str]:
-        db = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
+        from . import config
+        db = config._9router_db()
         if not db.exists(): return set()
         try:
             conn = sqlite3.connect(str(db))

@@ -8,6 +8,7 @@ _COLORS = {
 
 def _use_color():
     if os.environ.get("NO_COLOR"): return False
+    if os.environ.get("FORCE_COLOR"): return True
     if platform.system() == "Windows":
         return bool(os.environ.get("WT_SESSION") or os.environ.get("ConEmuANSI")
                     or os.environ.get("ANSICON") or os.environ.get("VSCODE_PID"))

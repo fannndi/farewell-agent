@@ -175,18 +175,25 @@ def _run_agent(agent: str, task: str):
 
     render_config()
 
-    task_quoted = enriched_task.replace('"', '\\"')
-    parts = [f'"{opencode_path}"', "run", f'"{task_quoted}"', "--agent", agent, "--format", "json"]
+    parts = [opencode_path, "run", enriched_task, "--agent", agent, "--format", "json"]
     from pathlib import Path as _Path
     if project_path and str(_Path(project_path).resolve()) != str(config.ROOT_DIR.resolve()):
-        parts += ["--dir", f'"{project_path}"']
-    cmd_str = " ".join(parts)
+        parts += ["--dir", str(project_path)]
+
+    if config.is_windows():
+        quoted = [f'"{p}"' if " " in p else p for p in parts]
+        cmd_str = " ".join(quoted)
+    else:
+        cmd_str = parts  # list-arg
 
     info(f"Agent: {agent}")
     print(f"\n  {c('='*40, 'gray')}\n")
 
     try:
-        result = subprocess.run(cmd_str, capture_output=True, timeout=600, shell=True)
+        if config.is_windows():
+            result = subprocess.run(cmd_str, capture_output=True, timeout=600, shell=True)
+        else:
+            result = subprocess.run(cmd_str, capture_output=True, timeout=600)
         out_text = result.stdout.decode("utf-8", errors="replace")
         err_text = result.stderr.decode("utf-8", errors="replace") if result.stderr else ""
         if result.returncode == 0:

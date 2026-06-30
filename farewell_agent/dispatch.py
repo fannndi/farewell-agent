@@ -108,16 +108,20 @@ def run(task: str):
 
     model_str = f"9router/{resolved['leader']}"
 
-    # Build command string for shell=True (opencode.CMD needs cmd.exe context)
-    task_quoted = enriched_task.replace('"', '\\"')
-    parts = [f'"{opencode_path}"', "run", f'"{task_quoted}"', "--agent", agent, "--model", model_str, "--format", "json"]
+    # Build command — platform aware
+    title_safe = task[:60].replace('"', "'").replace("\n", " ")
+    parts = [opencode_path, "run", enriched_task, "--agent", agent, "--model", model_str, "--format", "json", "--title", title_safe]
     if project_path and str(config.ROOT_DIR.resolve()) != str(Path(project_path).resolve()):
-        parts += ["--dir", f'"{project_path}"']
+        parts += ["--dir", str(project_path)]
     if session_args:
         parts += session_args
-    title_safe = task[:60].replace('"', "'").replace("\n", " ")
-    parts += ["--title", f'"{title_safe}"']
-    cmd_str = " ".join(parts)
+
+    if config.is_windows():
+        # opencode.CMD needs cmd.exe context
+        quoted = [f'"{p}"' if " " in p or '"' in p else p for p in parts]
+        cmd_str = " ".join(quoted)
+    else:
+        cmd_str = parts  # list-arg, no shell=True
 
     info(f"Exec: opencode run --agent {agent} --model {model_str}")
 
@@ -128,7 +132,10 @@ def run(task: str):
     summary = f"Ran: {task[:80]}"
 
     try:
-        result = subprocess.run(cmd_str, capture_output=True, timeout=600, shell=True)
+        if config.is_windows():
+            result = subprocess.run(cmd_str, capture_output=True, timeout=600, shell=True)
+        else:
+            result = subprocess.run(cmd_str, capture_output=True, timeout=600)
         duration = time.time() - t0
         out_text = result.stdout.decode("utf-8", errors="replace")
         err_text = result.stderr.decode("utf-8", errors="replace") if result.stderr else ""

@@ -1,4 +1,4 @@
-import json, os
+import json
 from pathlib import Path
 from . import config
 from .state.io import read_json
@@ -10,16 +10,8 @@ def _load_config():
     global _CONFIG_CACHE
     if _CONFIG_CACHE is not None:
         return _CONFIG_CACHE
-    models = {}
-    f = config.ROOT_DIR / "api-key.txt"
-    if f.exists():
-        for line in f.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if "=" not in line or line.startswith("#"): continue
-            k, v = line.split("=", 1)
-            models[k.strip()] = v.strip()
-    _CONFIG_CACHE = models
-    return models
+    _CONFIG_CACHE = config.load_env()
+    return _CONFIG_CACHE
 
 def _load_combo_names() -> set[str]:
     global _COMBO_CACHE
@@ -27,7 +19,7 @@ def _load_combo_names() -> set[str]:
         return _COMBO_CACHE
     try:
         import sqlite3
-        db = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
+        db = config._9router_db()
         if db.exists():
             conn = sqlite3.connect(str(db))
             names = {row[0] for row in conn.execute("SELECT name FROM combos")}
