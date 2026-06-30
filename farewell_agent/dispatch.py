@@ -139,20 +139,9 @@ def run(task: str, model_override: str | None = None):
 
 WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, respons dianggap TIDAK LENGKAP."""
 
-    # --- 7a. Team workflow (orchestrator → planner → executor) ---
+    # --- 7a. Team workflow (orchestrator -> planner -> executor) ---
     if resolved.get("agent") == "team" and work_mode == "build":
-        print(f"  [DEBUG] entering team workflow", flush=True)
-        import traceback
-        try:
-            _run_team_workflow(enriched_task, task, code, active, resolved, project_path, session_id)
-            print(f"  [DEBUG] team workflow completed", flush=True)
-        except SystemExit:
-            print(f"  [DEBUG] team workflow sys.exit", flush=True)
-            raise
-        except Exception as e:
-            print(f"  [DEBUG] team workflow error: {e}", flush=True)
-            traceback.print_exc()
-            raise
+        _run_team_workflow(enriched_task, task, code, active, resolved, project_path, session_id)
         lock.unlink(missing_ok=True)
         return
 
@@ -284,7 +273,7 @@ def _run_team_workflow(enriched_task: str, task: str, code: str, active: str,
     worker_model = resolved["worker"]
     worker_str = f"9router/{worker_model}"
 
-    step("TEAM", f"Orchestrator {resolved['model_key']} → WORKER")
+    step("TEAM", f"Orchestrator {resolved['model_key']} -> WORKER")
     _info(f"Planner @ {worker_model} (read) + Senior-engineer @ {worker_model} (write)")
     print()
 
