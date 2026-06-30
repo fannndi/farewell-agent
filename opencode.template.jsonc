@@ -180,6 +180,10 @@
   },
 
   "command": {
+    "repl": {
+      "description": "REPL mode — natural language, auto-action",
+      "template": "py -m farewell_agent repl $ARGUMENTS"
+    },
     "setup-project": {
       "description": "Register project + extract guide + switch",
       "template": "py -m farewell_agent setup-project $ARGUMENTS"
@@ -215,10 +219,6 @@
     "org": {
       "description": "Organization hierarchy",
       "template": "py -m farewell_agent org $ARGUMENTS"
-    },
-    "cost": {
-      "description": "Token usage & budget",
-      "template": "py -m farewell_agent cost $ARGUMENTS"
     }
   },
 

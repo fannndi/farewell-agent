@@ -449,6 +449,10 @@ def cmd_analyze(args):
             for x in s:
                 print(f"    [{x['type']}] {x['message']}")
 
+def cmd_repl(args=None):
+    from .repl import run as repl_run
+    repl_run()
+
 def cmd_evolution(args):
     from .evolution import run as evolution_run
     evolution_run()
@@ -595,10 +599,14 @@ def main():
     p.set_defaults(func=cmd_evolution)
     p = sub.add_parser("/evolution", parents=[p], add_help=False)
 
+    p = sub.add_parser("repl", help="Interactive REPL mode (default)")
+    p.set_defaults(func=cmd_repl)
+
     args = parser.parse_args()
-    if not args.command:
-        parser.print_help()
-        import sys; sys.exit(1)
+    if not args.command or args.command == "repl":
+        from .repl import run as repl_run
+        repl_run()
+        return
     args.func(args)
     write_context_footer()
 

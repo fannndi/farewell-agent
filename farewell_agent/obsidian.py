@@ -25,6 +25,30 @@ def sync_memory(code: str, name: str, content: str, target: str = "memory"):
     (project_dir / fname).write_text(content, encoding="utf-8")
     return True
 
+def sync_chat(code: str, name: str, user_input: str, output: str = "",
+              intent: str = "run", session_id: str = "", project: str = ""):
+    """Append a chat entry to Chat-Log.md in Obsidian vault."""
+    vault = _vault_path()
+    if not vault: return False
+    proj_dir = vault / f"{code}-{name}"
+    proj_dir.mkdir(parents=True, exist_ok=True)
+    chat_file = proj_dir / "Chat-Log.md"
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M")
+    entry = (
+        f"\n## {ts}\n"
+        f"- **User:** {user_input[:300]}\n"
+        f"- **Intent:** {intent}\n"
+    )
+    if output:
+        entry += f"- **Output:** {output[:500]}\n"
+    if session_id:
+        entry += f"- **Session:** {session_id}\n"
+    entry += "---\n### FOOTER\n---\n"
+    with open(str(chat_file), "a", encoding="utf-8") as f:
+        f.write(entry)
+    return True
+
+
 def write_session_note(code: str, name: str, task: str, agent: str, model: str, success: bool, summary: str):
     vault = _vault_path()
     if not vault: return False
