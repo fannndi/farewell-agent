@@ -30,8 +30,12 @@ def verify_router() -> bool:
 def run(task: str):
     t0 = time.time()
     if not verify_router():
-        fail("9Router (port 20128) is not responding. Start it first.")
-        sys.exit(1)
+        info("9Router not running — starting automatically...")
+        from .daily import _ensure_9router
+        if not _ensure_9router():
+            fail("9Router failed to start.")
+            sys.exit(1)
+        ok("9Router started")
 
     opencode_path = shutil.which("opencode")
     if not opencode_path:
