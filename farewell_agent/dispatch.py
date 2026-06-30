@@ -322,21 +322,27 @@ def _run_team_workflow(enriched_task: str, task: str, code: str, active: str,
     else:
         fail(f"Senior-engineer gagal: {exec_text[:100]}")
 
-    # Session + evodb + obsidian
-    end_session(code, active, session_id, "completed" if success else "failed", None, summary)
-
-    project_label = f"{code}-{active}"
-    evodb.init()
-    evodb.insert_task(project_label, None, "team", resolved["resolved"],
-                      footer_ok=success, duration_s=duration, success=success)
-
-    write_trace(project_label, None, "team", resolved["resolved"], success, summary, duration)
-
-    if obsidian.is_configured():
-        obsidian.write_session_note(code, active, task, "team", resolved["resolved"], success, summary)
+    # Session + evodb + obsidian (safe: don't let side-effects break success)
+    try:
+        end_session(code, active, session_id, "completed" if success else "failed", None, summary)
+    except Exception:
+        pass
+    try:
+        project_label = f"{code}-{active}"
+        evodb.init()
+        evodb.insert_task(project_label, None, "team", resolved["resolved"],
+                          footer_ok=success, duration_s=duration, success=success)
+        write_trace(project_label, None, "team", resolved["resolved"], success, summary, duration)
+    except Exception:
+        pass
+    try:
+        if obsidian.is_configured():
+            obsidian.write_session_note(code, active, task, "team", resolved["resolved"], success, summary)
+    except Exception:
+        pass
 
     if success:
         print()
-        ok(f"Team workflow selesai ({resolved['model_key']} orkestrasi → WORKER eksekusi)")
+        ok(f"Team workflow selesai ({resolved['model_key']} -> WORKER eksekusi)")
     else:
         sys.exit(1)
