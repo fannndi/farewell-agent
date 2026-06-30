@@ -16,7 +16,7 @@ def log_entry(project: str, model: str, tokens_in: int, tokens_out: int, cost: f
         f.write(line + "\n")
 
 def write_trace(project: str, task_class: str | None, agent: str, model: str, success: bool, summary: str, duration_s: float):
-    """Execution trace — Hermes Self-Evolution pattern. Append to trace log."""
+    """Execution trace -- Hermes Self-Evolution pattern. Append to trace log."""
     trace_file = config.FAREWELL_DIR / "trace-log.csv"
     trace_file.parent.mkdir(parents=True, exist_ok=True)
     if not trace_file.exists():

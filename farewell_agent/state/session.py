@@ -1,4 +1,4 @@
-"""Session continuity — track lineage, offer resume, store full context per run."""
+"""Session continuity -- track lineage, offer resume, store full context per run."""
 
 from datetime import datetime, timezone
 from pathlib import Path

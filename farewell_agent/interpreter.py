@@ -1,4 +1,4 @@
-"""Prompt interpreter — refines user input, injects footer, ensures footer in output."""
+"""Prompt interpreter -- refines user input, injects footer, ensures footer in output."""
 
 import re
 from . import config
@@ -21,7 +21,7 @@ def _next_hint(task: str, task_class: str | None = None) -> str:
             "fix": "verifikasi bahwa bug telah diperbaiki",
             "audit": "tindak lanjuti temuan audit",
             "learn": "simpan pengetahuan baru ke MEMORY.md",
-            "health": "tidak ada tindakan lanjutan — sistem sehat",
+            "health": "tidak ada tindakan lanjutan -- sistem sehat",
             "refactor": "jalankan test untuk memastikan tidak ada yang rusak",
             "deploy": "pantau deployment dan cek log",
             "security-review": "perbaiki kerentanan yang ditemukan",

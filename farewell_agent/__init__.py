@@ -1,1 +1,1 @@
-"""Farewell Agent — AI coding assistant orchestrator."""
+"""Farewell Agent -- AI coding assistant orchestrator."""

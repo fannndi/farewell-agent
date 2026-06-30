@@ -1,4 +1,4 @@
-"""Guide (buku panduan) — search and browse the Obsidian knowledge base."""
+"""Guide (buku panduan) -- search and browse the Obsidian knowledge base."""
 
 from . import config
 from .context import _vault_dir, search, is_ready

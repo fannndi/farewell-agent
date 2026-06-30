@@ -1,4 +1,4 @@
-"""Setup — clone dependency repos (routers, skills, registries, references)."""
+"""Setup -- clone dependency repos (routers, skills, registries, references)."""
 
 import subprocess, sys, time
 from pathlib import Path
@@ -44,7 +44,7 @@ def run():
     if all_ok:
         ok("All dependencies ready")
     else:
-        info("Some dependencies failed — check errors above")
+        info("Some dependencies failed -- check errors above")
     print(f"  {'='*40}\n")
 
     # Link 9Router build artifacts from farewell-assistant if available
@@ -62,7 +62,7 @@ def _link_9router_build():
     """Link .next/ and node_modules/ from existing farewell-assistant checkout."""
     fa_root = config.ROOT_DIR.parent / "farewell-assistant"
     if not fa_root.exists():
-        info("No fare well-assistant found — 9Router source only (build needed)")
+        info("No fare well-assistant found -- 9Router source only (build needed)")
         return
     for sub in [".next", "node_modules"]:
         src = fa_root / "9router" / sub
@@ -73,4 +73,4 @@ def _link_9router_build():
                 os.symlink(str(src), str(dst), target_is_directory=True)
                 ok(f"Linked 9router/{sub}/ from farewell-assistant")
             except (OSError, NotImplementedError):
-                info(f"Could not link {sub} — 9Router source only")
+                info(f"Could not link {sub} -- 9Router source only")

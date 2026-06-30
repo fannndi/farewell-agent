@@ -1,4 +1,4 @@
-"""Workflow orchestrator — multi-step task sequences for simple keywords.
+"""Workflow orchestrator -- multi-step task sequences for simple keywords.
 
 Maps user-friendly keywords ("audit", "tambah fitur", "cek") to multi-step
 processes that may involve multiple agents, mode switches, and reports.
@@ -37,7 +37,7 @@ def run_workflow(wf: str, task: str):
 
 
 def _wf_audit(task: str):
-    """Full project audit: plan mode → code review → report."""
+    """Full project audit: plan mode -> code review -> report."""
     step("AUDIT", "Starting comprehensive project audit")
 
     # Step 1: ensure plan mode
@@ -53,7 +53,7 @@ def _wf_audit(task: str):
 
 
 def _wf_feature(task: str):
-    """Feature development: plan → build → review."""
+    """Feature development: plan -> build -> review."""
     step("FEATURE", f"Starting feature development: {task[:60]}")
 
     # Step 1: Plan
@@ -81,7 +81,7 @@ def _wf_feature(task: str):
 
 
 def _wf_fix(task: str):
-    """Bug fix: identify → fix → verify."""
+    """Bug fix: identify -> fix -> verify."""
     step("FIX", f"Fixing: {task[:60]}")
 
     # Step 1: Diagnose
@@ -94,7 +94,7 @@ def _wf_fix(task: str):
 
 
 def _wf_learn(task: str):
-    """Research mode: plan mode → research → save to memory."""
+    """Research mode: plan mode -> research -> save to memory."""
     step("LEARN", f"Researching: {task[:60]}")
 
     _ensure_plan_mode()
@@ -115,14 +115,14 @@ def _wf_learn(task: str):
 
 
 def _wf_health(task: str):
-    """System health check — same as daily."""
+    """System health check -- same as daily."""
     step("HEALTH", "Running system health check")
     from .daily import run as daily_run
     daily_run()
 
 
 def _wf_refactor(task: str):
-    """Code cleanup: review dead code → clean up → verify."""
+    """Code cleanup: review dead code -> clean up -> verify."""
     step("REFACTOR", f"Refactoring: {task[:60]}")
 
     from .workmode import current as wm

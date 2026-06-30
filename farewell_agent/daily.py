@@ -53,7 +53,7 @@ def _ensure_9router() -> bool:
     sock.close()
     if result == 0: return True
 
-    skip("9Router not running — starting...")
+    skip("9Router not running -- starting...")
     router_dir = config.ROUTER_DIR
     standalone = router_dir / ".next" / "standalone"
     src = router_dir / ".next" / "static"
@@ -172,7 +172,7 @@ def _print_report(health, ecc, github, combos):
             except: pass
         tag = github.get("tag", "").lstrip("v")
         if local_ver and tag != local_ver:
-            info(f"GitHub: v{tag} — update available!")
+            info(f"GitHub: v{tag} -- update available!")
         else: ok(f"GitHub: {github.get('tag', '?')}")
     total_models = sum(len(c.get("models", [])) for c in combos)
     for c_ in combos:

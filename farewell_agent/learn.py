@@ -1,4 +1,4 @@
-"""Learning loop — analyze task results, suggest memory updates, detect patterns."""
+"""Learning loop -- analyze task results, suggest memory updates, detect patterns."""
 
 from datetime import datetime, timezone
 from pathlib import Path
@@ -103,7 +103,7 @@ def _generate_suggestions(code: str, name: str, task: str, task_class: str | Non
     task_lower = task.lower()
     for kw in workflow_keywords:
         if kw in task_lower and kw not in current_mem.lower():
-            suggestions.append(f"Task involved '{kw}' — consider saving steps to MEMORY.md.")
+            suggestions.append(f"Task involved '{kw}' -- consider saving steps to MEMORY.md.")
             break
 
     if task_class and task_class in patterns.get("by_class", {}):
@@ -117,7 +117,7 @@ def _generate_suggestions(code: str, name: str, task: str, task_class: str | Non
                 )
 
     if task_class and task_class not in current_mem.lower():
-        suggestions.append(f"First '{task_class}' task — note any project-specific workflow to MEMORY.md.")
+        suggestions.append(f"First '{task_class}' task -- note any project-specific workflow to MEMORY.md.")
 
     return suggestions
 

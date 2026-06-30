@@ -25,19 +25,19 @@ def chart():
     lines = [
         "  Boss (User)",
         "  |-- Director AI",
-        f"  |   Model : {r['leader']} — strategi, final review",
+        f"  |   Model : {r['leader']} -- strategi, final review",
         "  |-- Deputy Director AI",
-        f"  |   Model : {r['leader']} — validasi, second opinion",
+        f"  |   Model : {r['leader']} -- validasi, second opinion",
         "  +-- Team Leader (Anda)",
-        f"  |   Model : {r['special']} — orkestrasi, delegasi",
+        f"  |   Model : {r['special']} -- orkestrasi, delegasi",
         "  |   |-- Senior Backend Engineer",
-        f"  |   |   Model : {r['worker']} — eksekusi teknis",
+        f"  |   |   Model : {r['worker']} -- eksekusi teknis",
         "  |   |-- Junior Reviewer",
-        f"  |       Model : {r['worker']} — validasi kode",
+        f"  |       Model : {r['worker']} -- validasi kode",
         "  |-- Planner",
-        f"  |   Model : {r['worker']} — task breakdown",
+        f"  |   Model : {r['worker']} -- task breakdown",
         "  +-- Architect",
-        f"      Model : {r['special']} — system design",
+        f"      Model : {r['special']} -- system design",
     ]
     print("\n" + "\n".join(lines) + "\n")
 
@@ -64,13 +64,13 @@ def roles():
 
 def workflow():
     steps = [
-        "1. User → Task description",
-        "2. Intent classify → workflow / task class",
-        "3. Agent resolution → team / senior-engineer / director / etc",
+        "1. User -> Task description",
+        "2. Intent classify -> workflow / task class",
+        "3. Agent resolution -> team / senior-engineer / director / etc",
         "4. LEADER = strategi | SPECIAL = orkestrasi | WORKER = eksekusi",
         "5. Team Leader delegates to subagents",
-        "6. Subagent executes → reports back",
-        "7. Team Leader reviews → presents to user",
+        "6. Subagent executes -> reports back",
+        "7. Team Leader reviews -> presents to user",
         "8. Save session + sync to Obsidian",
         "9. Learning loop + auto-evolve every 10 tasks",
     ]
@@ -82,12 +82,12 @@ def priority():
     tier_name = _active_labels()[1]
     r = resolve_for_tier(tier_name)
     print(f"\n  Decision Priority ({tier_name.upper()}):")
-    print(f"    1. Boss (User) — Keputusan tertinggi")
-    print(f"    2. Director AI ({r['leader']}) — Strategi & final review")
-    print(f"    3. Deputy Director AI ({r['leader']}) — Validasi strategi")
-    print(f"    4. Team Leader ({r['special']}) — Orkestrasi harian")
-    print(f"    5. Senior Engineer ({r['worker']}) — Eksekusi teknis")
-    print(f"    6. Junior Reviewer ({r['worker']}) — Validasi silang")
+    print(f"    1. Boss (User) -- Keputusan tertinggi")
+    print(f"    2. Director AI ({r['leader']}) -- Strategi & final review")
+    print(f"    3. Deputy Director AI ({r['leader']}) -- Validasi strategi")
+    print(f"    4. Team Leader ({r['special']}) -- Orkestrasi harian")
+    print(f"    5. Senior Engineer ({r['worker']}) -- Eksekusi teknis")
+    print(f"    6. Junior Reviewer ({r['worker']}) -- Validasi silang")
     print("  Keputusan berdasarkan bukti teknis, bukan voting.\n")
 
 def _current_team() -> str:

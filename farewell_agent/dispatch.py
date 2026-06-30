@@ -1,4 +1,4 @@
-"""Enhanced dispatch — session continuity + context enrichment + learning loop."""
+"""Enhanced dispatch -- session continuity + context enrichment + learning loop."""
 
 import json, shutil, subprocess, socket, sys, time
 from pathlib import Path
@@ -17,6 +17,7 @@ from .helpers import ok, info, fail
 from .cost import write_trace
 from . import obsidian
 from .interpreter import refine, ensure_footer
+from . import evodb
 
 def verify_router() -> bool:
     """Check if 9Router port 20128 is reachable."""
@@ -30,7 +31,7 @@ def verify_router() -> bool:
 def run(task: str):
     t0 = time.time()
     if not verify_router():
-        info("9Router not running — starting automatically...")
+        info("9Router not running -- starting automatically...")
         from .daily import _ensure_9router
         if not _ensure_9router():
             fail("9Router failed to start.")
@@ -52,7 +53,7 @@ def run(task: str):
     # --- 1. Intent classification (workflow + task) ---
     wf, task_class = classify(task)
     if wf:
-        # High-level workflow detected — delegate to workflow orchestrator
+        # High-level workflow detected -- delegate to workflow orchestrator
         info(f"Workflow: {wf}")
         from .workflow import run_workflow
         run_workflow(wf, task)
@@ -71,7 +72,7 @@ def run(task: str):
     # --- 3. Plan mode guard ---
     plan_agents = ["team", "planner", "docs-lookup", "architect"]
     if work_mode == "plan" and agent not in plan_agents:
-        fail(f"Task '{task_class or 'default'}' needs build mode — you're in PLAN.")
+        fail(f"Task '{task_class or 'default'}' needs build mode -- you're in PLAN.")
         info("Run `farewell-agent workmode build` first.")
         write_trace(f"{code}-{active}", task_class, agent, resolved["leader"], False, "Blocked by plan mode", time.time() - t0)
         return
@@ -119,9 +120,12 @@ WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, resp
         session_args = ["--continue"]
         info(f"Continuing OpenCode session {mem['session_id'][:12]}...")
 
-    model_str = f"9router/{resolved['leader']}"
+    model_for_task = resolved.get("preferred") or resolved["leader"]
+    model_str = f"9router/{model_for_task}"
+    if resolved.get("preferred_reason"):
+        info(f"Model tuned: {model_for_task} ({resolved['preferred_reason']})")
 
-    # Build command — platform aware
+    # Build command -- platform aware
     title_safe = task[:60].replace('"', "'").replace("\n", " ")
     parts = [opencode_path, "run", enriched_task, "--agent", agent, "--model", model_str, "--format", "json", "--title", title_safe]
     if project_path and str(config.ROOT_DIR.resolve()) != str(Path(project_path).resolve()):
@@ -154,6 +158,9 @@ WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, resp
         err_text = result.stderr.decode("utf-8", errors="replace") if result.stderr else ""
 
         if result.returncode != 0:
+            evodb.init()
+            evodb.insert_task(f"{code}-{active}", task_class, agent, resolved["leader"],
+                             footer_ok=False, duration_s=duration, success=False)
             fail(f"OpenCode failed: {err_text[:300]}")
             end_session(code, active, session_id, "failed", None, f"Failed: {err_text[:100]}")
             write_trace(f"{code}-{active}", task_class, agent, resolved["leader"], False, f"Failed: {err_text[:100]}", duration)
@@ -170,10 +177,20 @@ WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, resp
         end_session(code, active, session_id, "completed", new_session_id, summary)
         ok(f"Done ({duration:.0f}s)")
 
-        # --- 9. Execution trace ---
+        # --- 9. Evolution database ---
+        try:
+            project_label = f"{code}-{active}"
+            evodb.init()
+            evodb.insert_task(project_label, task_class, agent, resolved["leader"],
+                             raw_input=task, enriched_input=enriched_task,
+                             footer_ok=True, duration_s=duration, success=True)
+        except Exception:
+            pass
+
+        # --- 10. Execution trace ---
         write_trace(f"{code}-{active}", task_class, agent, resolved["leader"], success, summary, duration)
 
-        # --- 10. Obsidian note — always sync from AI output ---
+        # --- 10. Obsidian note -- always sync from AI output ---
         if obsidian.is_configured():
             obsidian.write_session_note(code, active, task, agent, resolved["leader"], success, summary)
             # Sync memory & user profile after each task

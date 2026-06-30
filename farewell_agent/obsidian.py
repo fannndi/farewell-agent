@@ -1,4 +1,4 @@
-"""Obsidian vault integration — sync MEMORY.md/USER.md + session notes to vault."""
+"""Obsidian vault integration -- sync MEMORY.md/USER.md + session notes to vault."""
 
 from datetime import datetime
 from pathlib import Path
@@ -32,8 +32,8 @@ def write_session_note(code: str, name: str, task: str, agent: str, model: str, 
     project_dir.mkdir(parents=True, exist_ok=True)
     note_file = project_dir / "Session-Log.md"
     ts = datetime.now().strftime("%Y-%m-%d %H:%M")
-    status = "✅" if success else "❌"
-    line = f"- {status} **{ts}** — {task[:100]} → `{agent} @ {model}`\n"
+    status = "[OK]" if success else "[FAIL]"
+    line = f"- {status} **{ts}** -- {task[:100]} -> `{agent} @ {model}`\n"
     if summary:
         line += f"  _{summary[:200]}_\n"
     with open(str(note_file), "a", encoding="utf-8") as f:

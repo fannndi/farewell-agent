@@ -1,4 +1,4 @@
-"""Intent classifier — task description → workflow/agent mapping."""
+"""Intent classifier -- task description -> workflow/agent mapping."""
 
 # High-level workflow keywords (Indonesian + English)
 WORKFLOW_RULES = {

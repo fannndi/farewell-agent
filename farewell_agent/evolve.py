@@ -1,4 +1,4 @@
-"""Self-evolution engine — analyzes patterns, tunes prompt/model, writes lessons."""
+"""Self-evolution engine -- analyzes patterns, tunes prompt/model, writes lessons."""
 
 from .state.io import read_json, write_json
 from .state.memory import save_memory, memory_content
@@ -29,10 +29,10 @@ def run(code: str, name: str) -> list[str]:
         "evolutions": 0, "last_footer_rate": 1.0, "history": []
     }
 
-    # 1. Check footer rate — overall
+    # 1. Check footer rate -- overall
     if footer_rate < 0.95:
         _record_evolution(evolve_data, "footer_rate", f"{footer_rate:.0%}")
-        changes.append(f"- [FOOTER] rate {footer_rate:.0%} — eskalasi instruksi footer (selesai)")
+        changes.append(f"- [FOOTER] rate {footer_rate:.0%} -- eskalasi instruksi footer (selesai)")
 
     # 2. Check per-class footer rate
     by_class = patterns.get("by_class", {})
@@ -42,7 +42,7 @@ def run(code: str, name: str) -> list[str]:
             cls_rate = cls_footer / stats["total"]
             if cls_rate < 0.5 and cls_rate > 0:
                 _record_evolution(evolve_data, f"footer:{cls}", f"{cls_rate:.0%}")
-                changes.append(f"- [FOOTER] {cls}: {cls_rate:.0%} footer — perlu prompt khusus")
+                changes.append(f"- [FOOTER] {cls}: {cls_rate:.0%} footer -- perlu prompt khusus")
 
     # 3. Check per-class success rate
     for cls, stats in by_class.items():
@@ -50,7 +50,7 @@ def run(code: str, name: str) -> list[str]:
             rate = stats["success"] / stats["total"]
             if rate < 0.5:
                 _record_evolution(evolve_data, f"class:{cls}", f"{rate:.0%} success")
-                changes.append(f"- [PERF] {cls}: {rate:.0%} sukses ({stats['success']}/{stats['total']}) — upgrade tier model")
+                changes.append(f"- [PERF] {cls}: {rate:.0%} sukses ({stats['success']}/{stats['total']}) -- upgrade tier model")
 
     # 4. Check per-agent performance
     by_agent = patterns.get("by_agent", {})
@@ -59,9 +59,19 @@ def run(code: str, name: str) -> list[str]:
             rate = stats["success"] / stats["total"]
             if rate < 0.6:
                 _record_evolution(evolve_data, f"agent:{agent}", f"{rate:.0%} success")
-                changes.append(f"- [AGENT] {agent}: {rate:.0%} sukses — evaluasi agent assignment")
+                changes.append(f"- [AGENT] {agent}: {rate:.0%} sukses -- evaluasi agent assignment")
 
-    # 5. Write lessons to MEMORY.md
+    # 5. Auto-tune model preferences from evodb
+    try:
+        from .analyzer import auto_tune
+        tune_changes = auto_tune()
+        for tc in tune_changes:
+            changes.append(f"- [TUNE] {tc}")
+            _record_evolution(evolve_data, "auto_tune", tc)
+    except Exception as e:
+        changes.append(f"- [TUNE] skipped: {e}")
+
+    # 6. Write lessons to MEMORY.md
     if changes:
         current = memory_content(code, name)
         new_entry = f"\n## Evolusi ({_now()})\n" + "\n".join(changes)
@@ -77,7 +87,7 @@ def run(code: str, name: str) -> list[str]:
     evolve_data["evolutions"] += len(changes)
     write_json(_evolve_path(code, name), evolve_data)
 
-    return changes if changes else ["Semua metrik sehat — tidak perlu evolusi"]
+    return changes if changes else ["Semua metrik sehat -- tidak perlu evolusi"]
 
 
 def _record_evolution(data: dict, metric: str, value: str):

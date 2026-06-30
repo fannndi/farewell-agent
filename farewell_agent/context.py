@@ -1,4 +1,4 @@
-"""Knowledge context — always consult Obsidian vault (buku panduan) before action."""
+"""Knowledge context -- always consult Obsidian vault (buku panduan) before action."""
 
 import re
 from pathlib import Path

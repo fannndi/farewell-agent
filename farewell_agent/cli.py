@@ -1,4 +1,4 @@
-"""CLI dispatcher — routes commands to modules, zero business logic."""
+"""CLI dispatcher -- routes commands to modules, zero business logic."""
 
 import argparse, json
 from . import config
@@ -174,7 +174,7 @@ def cmd_cool(args):
                     found.append((cat, e))
         print(f"\n  {c(f'Found {len(found)} for: {args.query}', 'cyan')}\n")
         for cat, e in found[:20]:
-            print(f"  [{cat:>7}] {e.get('name')} — {e.get('tagline', '')}")
+            print(f"  [{cat:>7}] {e.get('name')} -- {e.get('tagline', '')}")
     elif args.action == "recommend":
         active = get_active()
         code = get_code(active)
@@ -231,7 +231,7 @@ def cmd_memory(args):
         print()
     elif args.action == "edit":
         import tempfile, subprocess, os
-        content = memory_content(code, active) or "# MEMORY — project facts\n"
+        content = memory_content(code, active) or "# MEMORY -- project facts\n"
         f = tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False, encoding="utf-8")
         f.write(content); f.close()
         editor = os.environ.get("EDITOR", "notepad")
@@ -296,10 +296,10 @@ def cmd_cost(args):
         traces = recent_traces(5)
         if traces:
             for t in traces:
-                icon = "✅" if t["success"] else "❌"
+                icon = "[OK]" if t["success"] else "[FAIL]"
                 print(f"  {icon} {t['project']} | {t['class']} | {t['agent']} | {t['summary'][:60]}")
         else:
-            print("  (no traces yet — run a task first)")
+            print("  (no traces yet -- run a task first)")
         print()
 
 def cmd_sessions(args):
@@ -328,7 +328,7 @@ def cmd_sessions(args):
             ico = {"completed": "[OK]", "failed": "[FAIL]", "timeout": "[!]"} .get(s["status"], "[-]")
             cls = s.get("task_class", "") or ""
             tag = f" [{cls}]" if cls else ""
-            print(f"  {ico} {s['task'][:60]}{tag}{dur} — {s['status']}")
+            print(f"  {ico} {s['task'][:60]}{tag}{dur} -- {s['status']}")
         print()
     elif args.action == "insights":
         ins = learn_insights(code, active)
@@ -372,7 +372,7 @@ def cmd_extract_knowledge(args):
         ok("Knowledge extracted. Open Obsidian and browse _farewell-agent/")
     else:
         from .helpers import fail
-        fail("Extraction failed — check errors above")
+        fail("Extraction failed -- check errors above")
 
 def _get_team_label() -> str:
     f = config.FAREWELL_DIR / "team.json"
@@ -446,6 +446,23 @@ Format WAJIB:
 WAJIB: FOOTER harus ada di SETIAP respons. Ini adalah aturan utama.
 """
     (config.STATE_DIR / "footer.md").write_text(footer_inst, encoding="utf-8")
+
+def cmd_analyze(args):
+    from .state.registry import get_active, get_code
+    from .analyzer import report, analyze
+    from .evodb import init
+    init()
+    active = get_active()
+    code = get_code(active)
+    project = f"{code}-{active}" if args.project else None
+    r = report(project)
+    print(r)
+    if args.suggest:
+        s = analyze(project)
+        if s:
+            print("\n  Suggestions:")
+            for x in s:
+                print(f"    [{x['type']}] {x['message']}")
 
 def cmd_evolve(args):
     from .state.registry import get_active, get_code
@@ -579,6 +596,11 @@ def main():
     p = sub.add_parser("evolve", help="Run self-evolution analysis")
     p.add_argument("--dry-run", action="store_true", help="Show analysis without applying changes")
     p.set_defaults(func=cmd_evolve)
+
+    p = sub.add_parser("analyze", help="Show model performance report")
+    p.add_argument("--project", help="Filter by project code (default: active)")
+    p.add_argument("--suggest", action="store_true", help="Show optimization suggestions")
+    p.set_defaults(func=cmd_analyze)
 
     args = parser.parse_args()
     if not args.command:

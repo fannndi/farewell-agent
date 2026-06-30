@@ -87,13 +87,27 @@ def resolve_for_tier(tier: str, task_class: str | None = None) -> dict:
         val = cfg.get(k, k.lower())
         return _alias(k, val, combos)
 
-    return {
+    result = {
         "leader": _resolve("leader"),
         "special": _resolve("special"),
         "worker": _resolve(worker_key),
         "tier": tier,
         "task_class": task_class,
     }
+
+    # Auto-tune: override with task_model_preferences if available
+    if roles.get("auto_tune") and task_class:
+        prefs = roles.get("task_model_preferences", {})
+        if task_class in prefs:
+            preferred_key = prefs[task_class].get("model", "")
+            tier_to_key = {"LEADER_1": "leader", "LEADER_2": "leader",
+                          "SPECIAL": "special", "WORKER": "worker", "WORKER_PRO": "worker"}
+            mapped = tier_to_key.get(preferred_key)
+            if mapped and mapped in result:
+                result["preferred"] = result[mapped]
+                result["preferred_reason"] = prefs[task_class].get("reason", "")
+
+    return result
 
 def resolve_agent(task_class: str | None, work_mode: str) -> str:
     if work_mode == "plan":
