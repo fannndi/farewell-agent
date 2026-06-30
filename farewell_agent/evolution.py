@@ -122,8 +122,8 @@ def run() -> list[str]:
         print(f"  {c('='*40, 'green')}")
         print(f"  {len(total_changes)} evolusi hari ini.")
         print(f"  Level akhir: {state['level']}")
-        for c in total_changes[-3:]:
-            info(c)
+        for chg in total_changes[-3:]:
+            info(chg)
     else:
         info("Tidak ada evolusi yang berjalan.")
 
