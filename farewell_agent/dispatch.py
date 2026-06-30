@@ -141,7 +141,18 @@ WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, resp
 
     # --- 7a. Team workflow (orchestrator → planner → executor) ---
     if resolved.get("agent") == "team" and work_mode == "build":
-        _run_team_workflow(enriched_task, task, code, active, resolved, project_path, session_id)
+        print(f"  [DEBUG] entering team workflow", flush=True)
+        import traceback
+        try:
+            _run_team_workflow(enriched_task, task, code, active, resolved, project_path, session_id)
+            print(f"  [DEBUG] team workflow completed", flush=True)
+        except SystemExit:
+            print(f"  [DEBUG] team workflow sys.exit", flush=True)
+            raise
+        except Exception as e:
+            print(f"  [DEBUG] team workflow error: {e}", flush=True)
+            traceback.print_exc()
+            raise
         lock.unlink(missing_ok=True)
         return
 
