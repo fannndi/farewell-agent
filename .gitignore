@@ -50,6 +50,10 @@ Desktop.ini
 # Execution traces (local)
 .farewell/trace-log.csv
 
+# Evolution database (auto-generated)
+.farewell/evodb.sqlite
+
 # Hermes references (cloned, not ours)
 /hermes-agent/
 /hermes-agent-self-evolution/
+.farewell/evodb.sqlite
