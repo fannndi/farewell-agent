@@ -180,21 +180,25 @@
   },
 
   "command": {
-    "workmode": {
-      "description": "Switch work mode: plan / build / status",
-      "template": "py -m farewell_agent workmode $ARGUMENTS"
+    "setup-project": {
+      "description": "Register project + extract guide + switch",
+      "template": "py -m farewell_agent setup-project $ARGUMENTS"
     },
-    "team": {
-      "description": "Switch team tier: divisi / tim / bawahan",
-      "template": "py -m farewell_agent team $ARGUMENTS"
+    "start-project": {
+      "description": "Auto-detect & register current dir",
+      "template": "py -m farewell_agent start-project $ARGUMENTS"
+    },
+    "daily": {
+      "description": "Start 9Router + npm update + sync + readiness",
+      "template": "py -m farewell_agent daily $ARGUMENTS"
+    },
+    "evolution": {
+      "description": "Pull 5 tools repo + extract + auto-apply",
+      "template": "py -m farewell_agent evolution $ARGUMENTS"
     },
     "status": {
       "description": "Show current state",
       "template": "py -m farewell_agent status $ARGUMENTS"
-    },
-    "daily": {
-      "description": "Start 9Router + sync + readiness",
-      "template": "py -m farewell_agent daily $ARGUMENTS"
     },
     "project": {
       "description": "List or switch active project",
@@ -207,10 +211,6 @@
     "memory": {
       "description": "View / edit project memory",
       "template": "py -m farewell_agent memory $ARGUMENTS"
-    },
-    "cool": {
-      "description": "awesome-opencode integration",
-      "template": "py -m farewell_agent cool $ARGUMENTS"
     },
     "org": {
       "description": "Organization hierarchy",

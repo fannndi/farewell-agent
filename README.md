@@ -6,107 +6,101 @@
 
 ## Cara Kerja
 
-Farewell Agent punya **2 mode**:
-
-| Mode | Bisa apa? | Agent |
-|------|-----------|-------|
-| **plan** | Baca kode, riset, rencanain. **No write.** | Planner, Architect |
-| **build** | Nulis kode, fix bug, deploy. **Full akses.** | Orchestrator -> Executor |
-
-## Siapa Siapa
-
 ```
-LEADER_1 / SPECIAL  ───→  Orchestrator (read-only, delegasi)
-WORKER              ───→  Planner (read-only) / Executor (write-only)
-Free_Chat / lain    ───→  Build fallback (single agent)
+Farewell Agent duduk di antara kamu dan AI model.
+Kamu bilang sesuatu -> dia rapiin + konteks + kirim ke AI -> selalu ada FOOTER.
 ```
 
-Cuma model yang terdaftar di **Org Registry** yang dapet multi-agent:
-```
-fa org
-  Org Registry (4 models):
-    LEADER_1  -> orchestrator
-    LEADER_2  -> orchestrator
-    SPECIAL   -> orchestrator
-    WORKER    -> executor
-```
+**2 mode:**
+| Mode | Agent | Tools |
+|------|-------|-------|
+| `plan` | Planner, Architect | Read-only — riset, rencana |
+| `build` | Orchestrator -> Executor | Full — nulis, fix, deploy |
 
 ---
 
-## Cara Mulai
+## 4 Command Utama
 
-```bash
-# 1. Install
-pip install -e .
+### `/daily` — Jalanin rutinitas harian
 
-# 2. Setup dependencies
-py -m farewell_agent setup
-
-# 3. Cek kesehatan
-py -m farewell_agent daily
-
-# 4. Jalanin tugas pertama
-py -m farewell_agent run "bikin file python hello world"
 ```
+fa daily
+```
+
+1. Start 9Router (kalau belum jalan)
+2. Git pull ECC + awesome-opencode + 9Router
+3. `npm update` package 9Router
+4. Render config + health check
+5. Laporan ke console
+
+### `/setup-project <path>` — Daftarin project baru
+
+```
+fa setup-project C:\project\flutter-app
+```
+
+1. Scan stack framework
+2. Register project
+3. Extract knowledge dari Obsidian vault -> bikin `guide-{stack}.md`
+4. Inject `.farewell/` symlink
+5. Switch active ke project baru -> **footer langsung aktif**
+
+### `/start-project` — Mulai project (dari CWD)
+
+```
+cd C:\project\baru
+fa start-project
+```
+
+1. Auto-detect framework
+2. Register + extract guide + switch
+3. "Project [X] siap. Footer aktif."
+
+### `/evolution` — Update tools + extract + auto-apply
+
+```
+fa evolution
+```
+
+1. Git pull 5 repo: **ECC, awesome-opencode, 9Router, Hermes Agent, Hermes Self-Evolution**
+2. Extract knowledge ke Obsidian vault
+3. Auto-detect ECC skill baru -> update manifest
+4. Render ulang config
+5. Catat ke MEMORY.md + Obsidian
 
 ---
 
-## Perintah
+## Perintah Lain
 
 | Kamu bilang | Artinya |
 |-------------|---------|
-| `fa run "buat fitur"` | Jalanin task |
+| `fa run "buat fitur"` | Jalanin task ke AI |
 | `fa status` | Lihat status |
-| `fa analyze --suggest` | Liat performa model |
-| `fa org` | Liat org chart |
-| `fa evolve` | Evolusi otomatis |
-| `fa daily` | Cek kesehatan |
-| `fa memory show` | Lihat catatan |
-| `fa memory save "isi"` | Simpan catatan |
-
-Tips: bikin alias `fa` di terminal.
+| `fa org` | Lihat org chart |
+| `fa analyze --suggest` | Report performa model |
+| `fa evolve` | Evolusi pattern & model tuning |
+| `fa memory show/save` | Kelola MEMORY.md |
+| `fa panduan` | Index buku panduan |
+| `fa cari <topik>` | Cari di Obsidian vault |
 
 ---
 
-## Setup Org (tambah model sendiri)
+## Org & Model
 
-Edit `.farewell/roles.json`:
+Cuma model di `org_registry` yang dapet multi-agent:
 
-```json
-{
-  "schema_version": 3,
-  "org_registry": ["LEADER_1", "LEADER_2", "SPECIAL", "WORKER", "MODEL_BARU"],
-  "resolve": {
-    "LEADER_1": { "role": "orchestrator", "agent": "team" },
-    "MODEL_BARU": { "role": "executor", "agent": "senior-engineer" }
-  }
-}
+```
+LEADER_1 -> orchestrator (SPECIAL)
+SPECIAL  -> orchestrator (SPECIAL)
+WORKER   -> executor      (senior-engineer)
+Lainnya  -> build (single agent, fallback)
 ```
 
-Lalu tambah key-nya ke `api-key.txt`:
-```
-MODEL_BARU=oc/model-baru-xyz
-```
-
-Model yang **tidak** di `org_registry` otomatis pake `build` (single agent).
-
----
-
-## Recovery (proses berhenti di tengah)
-
-Kalau proses crash atau ke Ctrl+C di tengah jalan:
-1. Farewell Agent deteksi lock file sisanya
-2. Session yang kepotong ditandai "interrupted"
-3. Lain kali jalanin task, recovery otomatis
-4. Footer yang hilang artinya proses belum selesai
-
-Manual: tinggal jalanin `fa run` lagi.
+Edit `.farewell/roles.json` buat daftarin model baru.
 
 ---
 
 ## Footer
-
-Setiap jawaban AI selalu diakhiri dengan:
 
 ```
 ---
@@ -115,23 +109,15 @@ Project: 001-farewell-agent | Session: a1b2c3
 Next: coba jalankan perintah selanjutnya
 ```
 
-**Tidak ada FOOTER = proses belum selesai.**
+**Tidak ada FOOTER = proses belum selesai.** Ada recovery otomatis kalau proses berhenti di tengah.
 
 ---
 
 ## Auto-Evolve
 
-Setiap 10 tugas, Farewell Agent:
-1. Cek footer rate (target 100%)
-2. Evaluasi model mana paling cocok per task class
-3. Update task_model_preferences otomatis
-4. Catat pelajaran ke MEMORY.md + sync ke Obsidian
+Setiap 10 tugas:
+1. Cek footer rate target 100%
+2. Evaluasi model per task class -> update preferensi
+3. Catat ke MEMORY.md + sync Obsidian
 
-Jalanin manual: `fa evolve`
-
----
-
-## Butuh Bantuan?
-
-- `fa cari <topik>` — cari di buku panduan
-- `fa --help` — semua perintah
+Manual: `fa evolve`

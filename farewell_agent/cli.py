@@ -449,6 +449,10 @@ def cmd_analyze(args):
             for x in s:
                 print(f"    [{x['type']}] {x['message']}")
 
+def cmd_evolution(args):
+    from .evolution import run as evolution_run
+    evolution_run()
+
 def cmd_evolve(args):
     from .state.registry import get_active, get_code
     from .evolve import run as evolve_run
@@ -493,21 +497,10 @@ def main():
     p = sub.add_parser("setup", help="Clone dependencies: 9Router, ECC, awesome-opencode")
     p.set_defaults(func=cmd_setup)
 
-    p = sub.add_parser("daily", help="Start 9Router + sync + readiness")
-    p.set_defaults(func=cmd_daily)
-
     p = sub.add_parser("project", help="List / switch project")
     p.add_argument("action", nargs="?", default="list", choices=["switch", "list"])
     p.add_argument("code", nargs="?", default="", help="Project code (e.g. 002)")
     p.set_defaults(func=cmd_project)
-
-    p = sub.add_parser("setup-project", help="Register & analyze a project")
-    p.add_argument("path", help="Absolute path to project directory")
-    p.set_defaults(func=cmd_setup_project)
-
-    p = sub.add_parser("start-project", help="Auto-detect & register current dir")
-    p.add_argument("path", nargs="?", default="", help="Optional path (default: CWD)")
-    p.set_defaults(func=cmd_start_project)
 
     p = sub.add_parser("org", help="Show org hierarchy / roles / workflow")
     p.add_argument("action", nargs="?", default="all", choices=["chart", "roles", "workflow", "priority", "all"])
@@ -582,6 +575,25 @@ def main():
     p.add_argument("--project", help="Filter by project code (default: active)")
     p.add_argument("--suggest", action="store_true", help="Show optimization suggestions")
     p.set_defaults(func=cmd_analyze)
+
+    # 4 main commands + shortcuts
+    p = sub.add_parser("daily", help="Start 9Router + npm update + sync + readiness")
+    p.set_defaults(func=cmd_daily)
+    p = sub.add_parser("/daily", parents=[p], add_help=False)
+
+    p = sub.add_parser("setup-project", help="Register project + extract guide + switch")
+    p.add_argument("path", help="Absolute path to project directory")
+    p.set_defaults(func=cmd_setup_project)
+    p = sub.add_parser("/setup-project", parents=[p], add_help=False)
+
+    p = sub.add_parser("start-project", help="Auto-detect & register current dir")
+    p.add_argument("path", nargs="?", default="", help="Optional path (default: CWD)")
+    p.set_defaults(func=cmd_start_project)
+    p = sub.add_parser("/start-project", parents=[p], add_help=False)
+
+    p = sub.add_parser("evolution", help="Pull 5 tools repo + extract + auto-apply")
+    p.set_defaults(func=cmd_evolution)
+    p = sub.add_parser("/evolution", parents=[p], add_help=False)
 
     args = parser.parse_args()
     if not args.command:

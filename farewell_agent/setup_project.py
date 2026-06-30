@@ -37,6 +37,8 @@ def analyze(path_str: str) -> dict:
 
     _write_manifest(result["code"], name, stack)
     _inject_symlinks(path, result["code"], name)
+    _extract_guide_book(result["code"], name, stack)
+    _switch_to_project(result["name"])
 
     return {
         "action": result["action"], "code": result["code"], "name": name,
@@ -120,6 +122,41 @@ def _inject_symlinks(project_path: Path, code: str, name: str):
     # Create per-project context dir
     ctx_dir = target / "context"
     ctx_dir.mkdir(parents=True, exist_ok=True)
+
+def _extract_guide_book(code: str, name: str, stack: list[str]):
+    """Copy relevant vault articles to projects/{code}-{name}/ as panduan."""
+    try:
+        from .obsidian import _vault_path
+        vault = _vault_path()
+        if not vault: return
+        proj_dir = vault / f"{code}-{name}"
+        proj_dir.mkdir(parents=True, exist_ok=True)
+        for s in stack:
+            src_dir = vault.parent / "stacks" / s
+            if not src_dir.exists(): continue
+            articles = sorted(src_dir.glob("*.md"))
+            if not articles: continue
+            lines = [f"# Panduan {s.upper()}\n"]
+            for a in articles[:10]:
+                text = a.read_text(encoding="utf-8", errors="ignore")[:500]
+                lines.append(f"\n## {a.stem}\n{text}\n---\n")
+            (proj_dir / f"guide-{s}.md").write_text("".join(lines), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _switch_to_project(name: str):
+    """Auto-switch active project after setup."""
+    try:
+        from .state.registry import load, save
+        reg = load()
+        reg["active"] = name
+        save(reg)
+        from .cli import write_context_footer
+        write_context_footer()
+    except Exception:
+        pass
+
 
 def _symlink(src: Path, dst: Path):
     """Cross-platform symlink (fallback to copy on Windows if needed)."""

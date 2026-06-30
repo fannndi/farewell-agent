@@ -27,6 +27,9 @@ def run():
         else:
             info(f"{label}: {result.get('reason', 'error')}")
 
+    step("2.5/4", "npm update 9Router")
+    _update_9router()
+
     step("3/4", "Sync opencode.jsonc")
     render_config()
     ok("Config regenerated")
@@ -114,6 +117,17 @@ def _index_awesome():
         info(f"awesome: {len(plugs)}p, {len(themes)}t, {len(ags)}a, {len(projs)}pr")
     except Exception:
         info("awesome: not available (not cloned?)")
+
+def _update_9router():
+    try:
+        r = subprocess.run(["npm", "update"], cwd=str(config.ROUTER_DIR),
+                          capture_output=True, text=True, timeout=120)
+        if r.returncode == 0:
+            ok("9Router npm packages updated")
+        else:
+            info(f"npm update: {r.stderr.strip()[:100]}")
+    except Exception as e:
+        info(f"npm update skipped: {e}")
 
 def _check_9router() -> dict:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM); sock.settimeout(2)
