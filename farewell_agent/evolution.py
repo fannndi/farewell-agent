@@ -1,6 +1,6 @@
-"""Self-evolution — auto-loop: generate scenario, execute, evaluate, level up/down."""
+"""Self-evolution — run one level, then commit+push."""
 
-import json, subprocess, time as _time, sys
+import subprocess, time as _time
 from datetime import datetime, timezone
 from pathlib import Path
 from . import config
@@ -28,7 +28,6 @@ LEVEL_PROMPTS = {
     6: "Buat program dengan integrasi database SQLite + CRUD operations.",
 }
 MAX_LEVEL = 6
-DAILY_BUDGET = 5.0
 
 
 def _evostate_path():
@@ -36,107 +35,84 @@ def _evostate_path():
 
 
 def _load_state():
-    return read_json(_evostate_path()) or {
-        "level": 1, "count": 0, "daily_count": 0,
-        "today": "", "history": []
-    }
+    return read_json(_evostate_path()) or {"level": 1, "count": 0}
 
 
 def _save_state(state):
     write_json(_evostate_path(), state)
 
 
-def _today():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
-
 def _now():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
 
 
+def _git_add_and_push(level_msg: str):
+    """Stage all, commit, push."""
+    try:
+        root = str(config.ROOT_DIR)
+        subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, timeout=30)
+        r = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=root, capture_output=True, timeout=10)
+        if r.returncode == 0:
+            info("No changes to commit.")
+            return
+        msg = f"evo: {level_msg}"
+        subprocess.run(["git", "commit", "-m", msg], cwd=root, capture_output=True, timeout=30)
+        subprocess.run(["git", "push"], cwd=root, capture_output=True, timeout=60)
+        ok(f"Committed + pushed: {msg}")
+    except Exception as e:
+        fail(f"Git error: {e}")
+
+
 def run() -> list[str]:
     state = _load_state()
-    today = _today()
-    if state.get("today") != today:
-        state["daily_count"] = 0
-        state["today"] = today
 
     if state["level"] > MAX_LEVEL:
-        return ["Max evolution level reached. Tidak ada yang perlu dievolusi."]
+        return ["Max evolution level reached."]
 
-    if not _check_budget():
-        return ["Budget limit reached today."]
+    changes = []
 
-    total_changes = []
-    print(f"\n  {c('Evolution Mode - Auto-loop', 'cyan')}")
-    print(f"  {c('='*40, 'cyan')}")
-    print(f"  Target level: {state['level']}/{MAX_LEVEL} | "
-          f"Hari ini: {state['daily_count']} evolusi | "
-          f"Model: {MODEL_FOR_EVOLUTION} (free)\n")
-
-    # Step 1: pull repos + extract (once per session)
+    # Step 1: pull repos + extract
+    print(f"\n  {c('Evolution', 'cyan')} — Level {state['level']}/{MAX_LEVEL}\n")
     _pull_and_extract()
-    total_changes.append("Repos pulled + knowledge extracted")
+    changes.append("repos synced")
 
-    # Step 2: auto-loop
-    evo_count = 0
-    while _check_budget() and state["level"] <= MAX_LEVEL:
-        evo_count += 1
-        state["count"] += 1
-        state["daily_count"] += 1
+    # Step 2: single level
+    state["count"] += 1
+    weak = _find_weakest_area()
+    scenario = _generate_scenario(state["level"], weak, state["count"])
 
-        weak = _find_weakest_area()
-        scenario = _generate_scenario(state["level"], weak, state["count"])
+    step(f"Evo {state['count']}", f"Level {state['level']} — {scenario['id']}")
+    info(f"Target: {weak['target']} ({weak['reason']})")
+    info(f"Task: {scenario['task'][:80]}")
 
-        step(f"Evo {state['count']}", f"Level {state['level']} - {scenario['id']}")
-        info(f"Target: {weak['target']} ({weak['reason']})")
-        info(f"Task: {scenario['task'][:80]}")
+    result = _execute_scenario(scenario)
 
-        result = _execute_scenario(scenario)
-
-        if result["passed"]:
+    if result["passed"]:
+        state["level"] += 1
+        msg = f"PASS ({result['duration']:.0f}s) -> Level {state['level']}"
+        ok(msg)
+        changes.append(msg)
+    else:
+        info("FAIL — retry 1x...")
+        result2 = _execute_scenario(scenario, feedback=result.get("error", ""))
+        if result2["passed"]:
             state["level"] += 1
-            msg = f"PASS ({result['duration']:.0f}s) -> Level {state['level']}"
+            msg = f"PASS (retry, {result2['duration']:.0f}s) -> Level {state['level']}"
             ok(msg)
-            total_changes.append(f"Evo {state['count']}: {scenario['id']} - {msg}")
+            changes.append(msg)
         else:
-            info("FAIL - retry 1x...")
-            result2 = _execute_scenario(scenario, feedback=result.get("error", ""))
-            if result2["passed"]:
-                state["level"] += 1
-                msg = f"PASS (retry, {result2['duration']:.0f}s) -> Level {state['level']}"
-                ok(msg)
-                total_changes.append(f"Evo {state['count']}: {scenario['id']} - {msg}")
-            else:
-                level_down = max(1, state["level"] - 1)
-                msg = f"FAIL (2x) -> turun ke level {level_down}"
-                fail(msg)
-                state["level"] = level_down
-                total_changes.append(f"Evo {state['count']}: {scenario['id']} - {msg}")
+            level_down = max(1, state["level"] - 1)
+            state["level"] = level_down
+            msg = f"FAIL (2x) -> Level {level_down}"
+            fail(msg)
+            changes.append(msg)
 
     _save_state(state)
-    _record(total_changes)
+    _record(changes)
+    _git_add_and_push(changes[-1])
 
-    if total_changes:
-        print(f"\n  {c('Evolution Summary', 'green')}")
-        print(f"  {c('='*40, 'green')}")
-        print(f"  {len(total_changes)} evolusi hari ini.")
-        print(f"  Level akhir: {state['level']}")
-        for chg in total_changes[-3:]:
-            info(chg)
-    else:
-        info("Tidak ada evolusi yang berjalan.")
-
-    return total_changes
-
-
-def _check_budget() -> bool:
-    try:
-        from .cost import budget_status
-        b = budget_status()
-        return b["spent_today"] < b["daily_budget"]
-    except Exception:
-        return True
+    print(f"\n  {c('Done', 'green')} — Level {state['level']}/{MAX_LEVEL}")
+    return changes
 
 
 def _pull_and_extract():
@@ -242,7 +218,7 @@ def _execute_scenario(scenario: dict, feedback: str = "") -> dict:
 
     try:
         from .dispatch import run as dispatch_run
-        dispatch_run(task)
+        dispatch_run(task, model_override=MODEL_FOR_EVOLUTION)
         passed = True
     except SystemExit:
         passed = False

@@ -57,7 +57,7 @@ def _load_combo_names() -> set[str]:
     return set()
 
 def _alias(key: str, value: str, combos: set[str]) -> str:
-    return key if key in combos else value
+    return value
 
 def invalidate_cache():
     global _CONFIG_CACHE, _COMBO_CACHE
