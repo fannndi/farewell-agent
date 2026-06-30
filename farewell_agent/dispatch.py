@@ -140,7 +140,10 @@ WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, resp
 
     # --- 7a. Team workflow (orchestrator → planner → executor) ---
     if resolved.get("agent") == "team" and work_mode == "build":
+        import sys as _sys
+        print(f"  [DEBUG] team: agent={resolved['agent']!r} mode={work_mode!r} key={resolved['model_key']!r}", file=_sys.stderr)
         _run_team_workflow(enriched_task, task, code, active, resolved, project_path, session_id)
+        print("  [DEBUG] team workflow returned OK", file=_sys.stderr)
         lock.unlink(missing_ok=True)
         return
 
