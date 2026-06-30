@@ -40,6 +40,11 @@ def budget_status() -> dict:
         "spent_month": spent["month"],
     }
 
+def can_evolve() -> bool:
+    """Check if daily budget allows more evolutions."""
+    b = budget_status()
+    return b["spent_today"] < b["daily_budget"]
+
 def recent_traces(n: int = 5) -> list[dict]:
     """Last N execution traces for context footer."""
     trace_file = config.FAREWELL_DIR / "trace-log.csv"

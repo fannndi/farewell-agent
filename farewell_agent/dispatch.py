@@ -46,7 +46,7 @@ def _check_recovery():
     return lock
 
 
-def run(task: str):
+def run(task: str, model_override: str | None = None):
     t0 = time.time()
     lock = _check_recovery()
 
@@ -86,8 +86,8 @@ def run(task: str):
     from .roles import is_org, resolve_model, resolve_agent as _resolve_agent
     agent = _resolve_agent(task_class, work_mode)
 
-    # Determine model key: default LEADER_1, or check for override
-    model_key = "LEADER_1"
+    # Determine model key: override or default LEADER_1
+    model_key = model_override or "LEADER_1"
     resolved = resolve_model(model_key)
     if work_mode != "plan":
         in_org = is_org(model_key)

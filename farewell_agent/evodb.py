@@ -110,6 +110,26 @@ def record_evolution(metric: str, old_value: str, new_value: str):
     conn.commit()
     conn.close()
 
+def daily_evolution_count() -> int:
+    """Number of evolutions run today."""
+    conn = _conn()
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    row = conn.execute("SELECT COUNT(*) FROM tasks WHERE created_at LIKE ?", (f"{today}%",)).fetchone()
+    conn.close()
+    return row[0] or 0
+
+
+def worst_performer(project: str | None = None) -> dict | None:
+    """Find the model+class combo with lowest success rate."""
+    perf = model_performance(project)
+    valid = [p for p in perf if p["total"] >= 2]
+    if not valid:
+        return None
+    worst = min(valid, key=lambda p: p["successes"] / p["total"] if p["total"] else 1)
+    rate = worst["successes"] / worst["total"] if worst["total"] else 1
+    return {**worst, "rate": rate}
+
+
 def recent_evolutions(limit: int = 10) -> list[dict]:
     conn = _conn()
     rows = conn.execute("SELECT metric, old_value, new_value, applied_at FROM evolutions ORDER BY id DESC LIMIT ?",

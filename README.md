@@ -1,155 +1,199 @@
 # Farewell Agent
 
-> Kamu ngomong. Dia kerja. **Obsidian nyatet.**
-
----
-
-## Apa Ini?
-
-Farewell Agent adalah **AI agent pribadi** yang duduk di antara kamu dan AI model.
-
 ```
-Kamu: "buat fitur login page"
-       │
-       ▼
-  ┌───────────────────────────────────┐
-  │  1. Baca Obsidian vault          │
-  │     (konteks project, MEMORY.md) │
-  │  2. Refine prompt + pilih model  │
-  │  3. Kirim ke AI model            │
-  │  4. Pastikan selalu ada FOOTER   │
-  │  5. Tulis ke Obsidian vault      │
-  │     (Chat-Log.md)                │
-  └───────────────────────────────────┘
-       │
-       ▼
-Kamu: "buat fitur login page" ✅ (45s)
+Kamu: "buat fitur login"
+  │
+  ▼
+┌─────────────────────────────────────────┐
+│  Baca Obsidian vault    Refine prompt   │
+│  Pilih AI model         Eksekusi       │
+│  Pastikan selalu ada FOOTER            │
+│  Simpan ke Obsidian vault              │
+└─────────────────────────────────────────┘
+  │
+  ▼
+✅ Selesai. (45s)
 ---
 ### FOOTER
-Project: 001-project | Next: test hasilnya
+Project: 001-project | Session: repl-a1b2 | Next: test hasilnya
 ---
 ```
 
-**Tidak ada syntax. Tidak ada command yang harus dihafal. Cuma ngomong.**
+**Farewell Agent adalah AI layer pribadi.** Dia duduk antara kamu dan AI model.
+Kamu ngomong natural — dia urus sisanya.
 
 ---
 
-## Cara Pakai
+## Mulai
 
 ```bash
-# Mulai REPL (tinggal ketik apapun)
+# Jalanin (REPL mode — tinggal ketik)
 py -m farewell_agent
 
-# Atau pake shortcut
+# Atau langsung
 py -m farewell_agent repl
 ```
 
-### Yang bisa kamu lakuin di REPL:
-
-| Kamu bilang | Dia lakuin |
-|-------------|-----------|
-| `buat fitur login dengan flask` | Baca vault → refine → kirim ke AI → FOOTER → simpen ke Obsidian |
-| `cek kesehatan` | Daily: start 9Router + npm update + health check |
-| `update tools` | Evolution: pull 5 repo + extract + auto-apply |
-| `daftarin project flutter di C:\project` | Setup: register + extract guide + switch |
-| `/help` | Lihat bantuan |
-| `exit` / `keluar` | Simpan session |
-
-### Atau panggil langsung (tanpa REPL):
-
-```bash
-fa daily                          # rutinitas harian
-fa evolution                      # update tools + extract
-fa setup-project C:\flutter-app   # daftarin project
-fa start-project                  # mulai project dari CWD
-fa run "buat fitur login"         # panggil AI langsung
+Contoh di REPL:
+```
+> buat program kalkulator sederhana
+[OK] Done (30s)
+---
+> cek kesehatan 9router
+[Daily] 9Router running
+---
+> evolusi
+[Evolution] 8 siklus, level 5 tercapai
+---
+> keluar
+Sampai jumpa!
 ```
 
 ---
 
-## Cara Kerja: Obsidian First
+## 4 Command
 
-Setiap interaksi:
+| Perintah | Fungsi |
+|----------|--------|
+| **`/daily`** | Start 9Router + npm update + pull 3 repo + health check |
+| **`/setup-project C:\path`** | Daftarin project + extract guide book dari Obsidian + switch aktif |
+| **`/start-project`** | Auto-detect direktori sekarang → daftarin + siap |
+| **`/evolution`** | **Pull 5 repo + generate scenario + execute + level up/down** |
 
-1. **Sebelum eksekusi** → baca Obsidian vault (konteks, MEMORY.md, skill terkait)
-2. **Saat eksekusi** → AI model kerja dengan konteks kaya
-3. **Setelah eksekusi** → tulis ke Obsidian vault:
-   - `Chat-Log.md` — riwayat percakapan
-   - `MEMORY.md` — pelajaran baru
-   - `Session-Log.md` — ringkasan session
+---
 
-Vault location: `_farewell-agent/projects/{code}-{name}/`
+## Evolution — Auto-Loop
+
+Ini inti Farewell Agent. Setiap `/evolution`:
+
+```
+┌─ 1. Pull 5 repo tools (ECC, 9Router, Hermes, dll)
+├─ 2. Extract pengetahuan baru ke Obsidian
+├─ 3. Analisis kelemahan diri:
+│     • Model mana yg sering missing FOOTER?
+│     • Task class mana yg success rate rendah?
+│     • Area apa yg belum pernah dites?
+├─ 4. Generate scenario sesuai kelemahan + level
+├─ 5. Eksekusi pake model SPECIAL (gratis)
+├─ 6. Verifikasi hasil:
+│     ✅ PASS → naik level
+│     ❌ FAIL → retry 1x
+│     ❌ FAIL 2x → turun level
+└─ 7. Loop → ulangi sampai budget harian habis
+```
+
+**Di hari libur:** tinggal jalanin `/evolution`, dia auto-loop sampai token abis.
+
+```
+Contoh binge evolution (8 siklus):
+  Evo 1: Level 1 basic-io      ✅ PASS (12s)
+  Evo 2: Level 2 function      ✅ PASS (25s)
+  Evo 3: Level 3 multi-file    ❌ FAIL → retry → ✅ (45s)
+  Evo 4: Level 4 external-lib  ✅ PASS (60s)
+  Evo 5: Level 5 architecture  ✅ PASS (90s)
+  Evo 6: Level 6 database      ❌ FAIL (2x) → turun ke 5
+  Evo 7: Level 5 design        ✅ PASS (80s)
+  Evo 8: Level 6 full-stack    ✅ PASS (3m)
+  ── Budget limit reached. Lanjut besok! ──
+```
 
 ---
 
 ## Org & Model
 
-Cuma model di `org_registry` yang dapet multi-agent:
+| Model | Role | Tools | Biaya |
+|-------|------|-------|-------|
+| `LEADER_1` | Orchestrator premium | read-only + delegasi | Mahal |
+| `LEADER_2` | Orchestrator premium | read-only + delegasi | Mahal |
+| `SPECIAL` | Orchestrator gratis | read-only + delegasi | **Gratis** |
+| `WORKER` | Executor | write-only | Murah |
+| Lainnya | Fallback `build` | full access | - |
 
-| Model | Role | Tools |
-|-------|------|-------|
-| `LEADER_1` | Orchestrator (premium) | read-only + delegasi |
-| `SPECIAL` | Orchestrator (gratis) | read-only + delegasi |
-| `WORKER` | Executor | write-only |
-
-Model lain (Free_Chat, dll) → fallback ke `build` (single agent).
-
+Cuma model di `org_registry` yang dapet multi-agent.
 Edit `.farewell/roles.json` buat daftarin model baru.
 
 ---
 
-## 4 Command Utama
-
-```
-┌──────────┐ ┌──────────┐ ┌──────────────┐ ┌──────────────┐
-│  DAILY   │ │SETUP-PROJ│ │START-PROJECT │ │  EVOLUTION   │
-│ cek      │ │daftarin  │ │mulai project │ │update tools  │
-│ kesehatan│ │+ extract │ │dari folder   │ │+ extract     │
-│ + update │ │+ switch  │ │ini           │ │+ auto-apply  │
-└──────────┘ └──────────┘ └──────────────┘ └──────────────┘
-```
-
-Semua otomatis: detect intent → execute → FOOTER → simpen ke Obsidian.
-
----
-
-## Footer (WAJIB)
-
-Setiap output diakhiri:
-
-```
----
-### FOOTER
-Project: 001-project | Session: repl-a1b2c3
-Next: cek hasilnya
----
-```
-
-**Tidak ada FOOTER = proses belum selesai.** Ada recovery otomatis.
-
----
-
-## Obsidian Sync
+## Obsidian Vault — Sumber Pengetahuan
 
 ```
 Obsidian Vault/
   _farewell-agent/
     projects/
       001-farewell-agent/
-        MEMORY.md           ← catatan project
-        USER.md             ← profil user
-        Session-Log.md      ← riwayat session
-        Chat-Log.md         ← percakapan REPL
-        guide-python.md     ← panduan dari vault
+        MEMORY.md           ← Catatan project (max 2.200 char)
+        USER.md             ← Profil user
+        Session-Log.md      ← Riwayat session
+        Chat-Log.md         ← Percakapan REPL (setiap chat tercatat)
+        guide-*.md          ← Panduan per stack
+```
+
+**Setiap interaksi:**
+1. Baca Obsidian vault buat konteks
+2. Proses + kirim ke AI model
+3. Tulis hasil ke `Chat-Log.md`
+4. Update `MEMORY.md` kalau ada pelajaran baru
+
+---
+
+## FOOTER — Quality Gate
+
+**Setiap output dari AI model WAJIB diakhiri FOOTER.**
+
+```
+---
+### FOOTER
+Project: 001-project | Session: repl-a1b2 | Next: test hasilnya
+---
+
+Tidak ada FOOTER = proses tidak selesai.
+Kalau proses berhenti di tengah (crash / Ctrl+C), recovery otomatis.
 ```
 
 ---
 
-## Auto-Evolve
+## Auto-Tune
 
-Setiap 10 task → Farewell Agent:
-1. Evaluasi model mana paling cocok per task
-2. Update preferensi otomatis
-3. Catat ke MEMORY.md + sync Obsidian
+Setiap 10 task, Farewell Agent:
+- Evaluasi mana model paling cocok per task class
+- Update `task_model_preferences` di `roles.json`
+- Catat ke MEMORY.md + sync Obsidian
 
-Manual: `fa evolve` atau ketik `evolusi` di REPL.
+Manual: `fa evolve` atau `fa analyze --suggest`
+
+---
+
+## Arsip Command (masih bisa dipake)
+
+```
+fa run "task"           → Jalanin task via OpenCode
+fa status               → Status lengkap
+fa org                  → Org chart
+fa analyze --suggest    → Report performa model
+fa memory show/save     → Kelola MEMORY.md
+fa cari <topik>         → Cari di Obsidian vault
+fa panduan              → Index buku panduan
+fa setup                → Clone dependencies
+fa project              → List / switch project
+```
+
+---
+
+## Quick Start
+
+```bash
+# 1. Clone + setup
+git clone https://github.com/fannndi/farewell-agent.git
+cd farewell-agent
+pip install -e .
+py -m farewell_agent setup
+
+# 2. Start 9Router + daily
+py -m farewell_agent daily
+
+# 3. Mulai REPL
+py -m farewell_agent repl
+
+# 4. Atau langsung
+py -m farewell_agent
+```

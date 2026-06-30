@@ -126,7 +126,10 @@ def _exec_start_project(raw: str) -> str:
 def _exec_evolution(raw: str) -> str:
     from .evolution import run as evo_run
     changes = evo_run()
-    return "; ".join(changes) if changes else "Tidak ada perubahan"
+    if not changes:
+        return "Tidak ada perubahan"
+    summary = "\n".join(f"  {c}" for c in changes)
+    return summary if len(summary) < 500 else f"{len(changes)} perubahan"
 
 
 def _exec_run(raw: str, result: dict) -> str:
