@@ -4,7 +4,7 @@ import json, shutil, subprocess, socket, sys, time
 from pathlib import Path
 from . import config
 from .state.registry import get_active, get_code, get_path
-from .state.memory import save_session, load_session
+from .state.memory import save_session, load_session, save_memory, memory_content
 from .state.session import start_session, end_session, suggest_resume
 from .roles import resolve_for_tier, resolve_agent
 from .intent import classify
@@ -58,13 +58,10 @@ def run(task: str):
 
     # --- 2. Model + agent resolution ---
     work_mode = current_mode()
-    agent = resolve_agent(task_class, work_mode)
-    tier_name = "tim"
     team_val = current_team()
-    for k, v in {"ON": "divisi", "TIM": "tim", "BAWAHAN": "bawahan"}.items():
-        if team_val == k:
-            tier_name = v
-            break
+    tier_name = {"ON": "divisi", "TIM": "tim", "BAWAHAN": "bawahan"}.get(team_val, "tim")
+    # Resolve agent dengan konteks tier
+    agent = resolve_agent(task_class, work_mode)
     resolved = resolve_for_tier(tier_name, task_class)
 
     # --- 3. Plan mode guard ---
@@ -172,9 +169,17 @@ WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, resp
         # --- 9. Execution trace ---
         write_trace(f"{code}-{active}", task_class, agent, resolved["leader"], success, summary, duration)
 
-        # --- 10. Obsidian note ---
+        # --- 10. Obsidian note — always sync from AI output ---
         if obsidian.is_configured():
             obsidian.write_session_note(code, active, task, agent, resolved["leader"], success, summary)
+            # Sync memory & user profile after each task
+            mem_text = memory_content(code, active)
+            if mem_text:
+                obsidian.sync_memory(code, active, mem_text, "memory")
+            from .state.memory import user_content as _uc
+            user_text = _uc(code, active)
+            if user_text:
+                obsidian.sync_memory(code, active, user_text, "user")
 
         # --- 11. Learning loop ---
         suggestions = analyze_completion(code, active, task, task_class, agent, success, duration, summary,

@@ -12,42 +12,47 @@ def _model_for_role(role_name: str, tier: str) -> str:
                "Junior Reviewer": r["worker"]}
     return mapping.get(role_name, r["worker"])
 
-def chart():
+def _active_labels():
     team_state = _current_team()
     tier_name = {"ON": "divisi", "TIM": "tim", "BAWAHAN": "bawahan"}.get(team_state, "tim")
+    return team_state, tier_name
+
+def chart():
+    team_state, tier_name = _active_labels()
     r = resolve_for_tier(tier_name)
+    print(f"\n  Team: {team_state}")
+    print(f"  Leader: {r['leader']} | Special: {r['special']} | Worker: {r['worker']}\n")
     lines = [
         "  Boss (User)",
         "  |-- Director AI",
-        f"  |   Model : {r['leader']}",
+        f"  |   Model : {r['leader']} — strategi, final review",
         "  |-- Deputy Director AI",
-        f"  |   Model : {r['leader']}",
-        "  +-- Team Leader AI (Anda)",
-        f"      Model : {r['special']}",
-        "      |-- Senior Backend Engineer",
-        f"      |   Model : {r['worker']}",
-        "      |-- Junior Reviewer I",
-        f"      |   Model : {r['worker']}",
-        "      |-- Junior Reviewer II",
-        f"      |   Model : {r['worker']}",
-        "      +-- Junior Reviewer III",
-        f"          Model : {r['worker']}",
+        f"  |   Model : {r['leader']} — validasi, second opinion",
+        "  +-- Team Leader (Anda)",
+        f"  |   Model : {r['special']} — orkestrasi, delegasi",
+        "  |   |-- Senior Backend Engineer",
+        f"  |   |   Model : {r['worker']} — eksekusi teknis",
+        "  |   |-- Junior Reviewer",
+        f"  |       Model : {r['worker']} — validasi kode",
+        "  |-- Planner",
+        f"  |   Model : {r['worker']} — task breakdown",
+        "  +-- Architect",
+        f"      Model : {r['special']} — system design",
     ]
     print("\n" + "\n".join(lines) + "\n")
 
 def roles():
-    team_state = _current_team()
-    tier_name = {"ON": "divisi", "TIM": "tim", "BAWAHAN": "bawahan"}.get(team_state, "tim")
+    team_state, tier_name = _active_labels()
     r = resolve_for_tier(tier_name)
     data = [
         ("[BOSS] User", "-", "Pengguna", ["Menentukan objective", "Prioritas", "Menyetujui hasil"]),
-        ("[DIRECTOR] Director AI", r["leader"], "Pegawai Tetap", ["Strategi", "Work Order", "Final review"]),
+        ("[DIRECTOR] Director AI", r["leader"], "Pegawai Tetap", ["Strategi", "Final review", "High-risk decisions"]),
         ("[DEPUTY] Deputy Director AI", r["leader"], "Pegawai Tetap", ["Validasi", "Second opinion"]),
-        ("[LEADER] Team Leader", r["special"], "Pegawai Tetap", ["Orkestrasi", "Audit frontend", "Review"]),
+        ("[LEADER] Team Leader", r["special"], "Pegawai Tetap", ["Orkestrasi", "Delegasi", "Review hasil"]),
         ("[SENIOR] Senior Backend Engineer", r["worker"], "Pegawai Tetap", ["Backend", "API", "DB", "Security"]),
-        ("[JUNIOR] Junior Reviewer I", r["worker"], "Junior", ["Bug Finding", "Edge Cases"]),
-        ("[JUNIOR] Junior Reviewer II", r["worker"], "Junior", ["Code Style", "Refactoring"]),
-        ("[JUNIOR] Junior Reviewer III", r["worker"], "Junior", ["Architecture", "Scalability"]),
+        ("[JUNIOR] Junior Reviewer", r["worker"], "Junior", ["Bug finding", "Code review", "Edge cases"]),
+        ("[PLANNER] Planner", r["worker"], "Pegawai Tetap", ["Task breakdown", "Research"]),
+        ("[ARCHITECT] Architect", r["special"], "Pegawai Tetap", ["System design", "Architecture decisions"]),
     ]
     print()
     for title, model, status, auths in data:
@@ -59,31 +64,30 @@ def roles():
 
 def workflow():
     steps = [
-        "1. Pahami objective — Baca task description",
-        "2. Analisis ruang lingkup — Scope, dependensi, risiko",
-        "3. Intent classify — Task class → model override",
-        "4. Resolve agent + model — roles.json + api-key.txt",
-        "5. Dispatch ke OpenCode — `opencode run --agent .. --model ..`",
-        "6. Eksekusi agent — tool calls, file edits, tests",
-        "7. Review output — Code review otomatis",
-        "8. Save session memory — Checkpoint",
-        "9. Update MEMORY.md — Catat pelajaran",
+        "1. User → Task description",
+        "2. Intent classify → workflow / task class",
+        "3. Agent resolution → team / senior-engineer / director / etc",
+        "4. LEADER = strategi | SPECIAL = orkestrasi | WORKER = eksekusi",
+        "5. Team Leader delegates to subagents",
+        "6. Subagent executes → reports back",
+        "7. Team Leader reviews → presents to user",
+        "8. Save session + sync to Obsidian",
+        "9. Learning loop + auto-evolve every 10 tasks",
     ]
     print("\n  Workflow:")
     for s in steps: print(f"    {s}")
     print()
 
 def priority():
-    roles_data = [
-        "1. Boss (User) — Keputusan tertinggi",
-        "2. Director AI — Strategi & final review",
-        "3. Deputy Director AI — Validasi strategi",
-        "4. Team Leader — Orkestrasi harian",
-        "5. Senior Backend Engineer — Eksekusi teknis",
-        "6. Junior Reviewer — Validasi silang",
-    ]
-    print("\n  Decision Priority:")
-    for r_ in roles_data: print(f"    {r_}")
+    tier_name = _active_labels()[1]
+    r = resolve_for_tier(tier_name)
+    print(f"\n  Decision Priority ({tier_name.upper()}):")
+    print(f"    1. Boss (User) — Keputusan tertinggi")
+    print(f"    2. Director AI ({r['leader']}) — Strategi & final review")
+    print(f"    3. Deputy Director AI ({r['leader']}) — Validasi strategi")
+    print(f"    4. Team Leader ({r['special']}) — Orkestrasi harian")
+    print(f"    5. Senior Engineer ({r['worker']}) — Eksekusi teknis")
+    print(f"    6. Junior Reviewer ({r['worker']}) — Validasi silang")
     print("  Keputusan berdasarkan bukti teknis, bukan voting.\n")
 
 def _current_team() -> str:

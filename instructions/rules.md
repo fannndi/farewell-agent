@@ -30,3 +30,19 @@ Gunakan `farewell-agent cari <topik>` untuk mencari manual, atau `farewell-agent
 - NEW task → HOLD → PLAN → APPROVE → execute
 - Bug fix → langsung tanpa hold
 - Commit only if asked
+
+## Obsidian Sync (WAJIB)
+Setiap task selesai, WAJIB sinkron ke Obsidian vault:
+1. Session-Log.md — catat task, agent, model, success, summary
+2. MEMORY.md — update dengan pelajaran dari task ini
+3. USER.md — update preferensi user jika ada perubahan
+
+Gunakan `farewell_agent.obsidian` module untuk sync otomatis.
+Jangan pernah lewatkan sync — Obsidian adalah sumber pengetahuan utama.
+
+## Team Orchestration
+- `team` agent = orkestrator (SPECIAL model) — delegasi, bukan eksekusi
+- `senior-engineer` = eksekutor teknis (WORKER model)
+- `director` = keputusan strategis (LEADER model)
+- `junior-reviewer` = validasi kode (WORKER model)
+- Team Leader JANGAN pernah ngerjain tugas sendiri. Selalu delegasi.

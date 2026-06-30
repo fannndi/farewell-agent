@@ -38,15 +38,44 @@
       "tools": { "write": true, "edit": true, "bash": true, "read": true, "changed-files": true }
     },
     "team": {
-      "description": "Team orchestrator",
+      "description": "Team orchestrator — delegasi ke subagent",
       "mode": "primary",
+      "model": "9router/${SPECIAL}",
+      "prompt": "{file:.opencode/prompts/team-orchestrator.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "director": {
+      "description": "Director AI — strategic decisions, final review",
+      "mode": "subagent",
       "model": "9router/${LEADER}",
-      "tools": { "write": true, "edit": true, "bash": true, "read": true, "changed-files": true }
+      "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
+      "tools": { "read": true, "bash": true, "write": true, "edit": true }
+    },
+    "deputy-director": {
+      "description": "Deputy Director AI — validation, second opinion",
+      "mode": "subagent",
+      "model": "9router/${LEADER}",
+      "prompt": "{file:ecc/.opencode/prompts/agents/architect.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "senior-engineer": {
+      "description": "Senior Backend Engineer — eksekusi teknis",
+      "mode": "subagent",
+      "model": "9router/${WORKER}",
+      "prompt": "{file:.opencode/prompts/senior-engineer.txt}",
+      "tools": { "write": true, "edit": true, "bash": true, "read": true }
+    },
+    "junior-reviewer": {
+      "description": "Junior Reviewer — validasi kode",
+      "mode": "subagent",
+      "model": "9router/${WORKER}",
+      "prompt": "{file:.opencode/prompts/junior-reviewer.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "planner": {
       "description": "Planning specialist",
       "mode": "subagent",
-      "model": "9router/${SPECIAL}",
+      "model": "9router/${WORKER}",
       "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
@@ -130,9 +159,9 @@
     "ketua-tim": {
       "description": "Lead — teknis, koordinasi",
       "mode": "subagent",
-      "model": "9router/${LEADER}",
-      "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
-      "tools": { "read": true, "write": true, "edit": true, "bash": true }
+      "model": "9router/${SPECIAL}",
+      "prompt": "{file:.opencode/prompts/team-orchestrator.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "backend-reviewer": {
       "description": "Backend audit",

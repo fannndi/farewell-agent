@@ -1,6 +1,7 @@
 # Runtime state
 .opencode/
 !.opencode/plugins/
+!.opencode/prompts/
 
 # Logging
 logging.md

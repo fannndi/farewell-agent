@@ -6,6 +6,32 @@ from .state.io import read_json
 _CONFIG_CACHE = None
 _COMBO_CACHE = None
 
+PLAN_AGENTS = {
+    "default": "team",
+    "audit": "architect",
+    "learn": "planner",
+    "research": "planner",
+    "feature": "team",
+    "fix": "team",
+    "refactor": "team",
+    "health": "build",
+}
+
+AGENT_MAP = {
+    "security-review": "security-reviewer",
+    "verification-loop": "tdd-guide",
+    "self-heal": "build-error-resolver",
+    "deploy": "senior-engineer",
+    "rust-debug": "senior-engineer",
+    "kotlin-debug": "senior-engineer",
+    "code-review": "junior-reviewer",
+    "review": "junior-reviewer",
+    "architecture": "architect",
+    "plan": "planner",
+    "research": "docs-lookup",
+    "default": "build",
+}
+
 def _load_config():
     global _CONFIG_CACHE
     if _CONFIG_CACHE is not None:
@@ -70,9 +96,6 @@ def resolve_for_tier(tier: str, task_class: str | None = None) -> dict:
     }
 
 def resolve_agent(task_class: str | None, work_mode: str) -> str:
-    roles = read_json(config.ROLES_FILE) or {}
-    plan_agents = roles.get("plan_agents", ["team", "planner"])
     if work_mode == "plan":
-        return plan_agents[0]
-    agent_map = roles.get("agent_map", {})
-    return agent_map.get(task_class or "", agent_map.get("default", "build"))
+        return PLAN_AGENTS.get(task_class or "default", "team")
+    return AGENT_MAP.get(task_class or "", AGENT_MAP.get("default", "build"))
