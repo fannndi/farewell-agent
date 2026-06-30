@@ -13,6 +13,7 @@ from .helpers import step, ok, info, fail, c
 from .sync import render as render_config
 from .context import lookup, is_ready as guide_ready
 from .interpreter import ensure_footer, build_footer
+from .intent import classify_task
 
 
 def run_workflow(wf: str, task: str):
@@ -174,7 +175,18 @@ def _run_agent(agent: str, task: str):
     else:
         enriched_task = task
 
-    enriched_task += f"\n---\n### FOOTER (required)\nProject: {code}-{active}\nNext: suggest one follow-up action\n"
+    task_class = classify_task(task) or "default"
+    hint = ""
+    enriched_task += f"""
+
+---
+
+### FOOTER (WAJIB)
+**Project:** {code}-{active}
+**Agent:** {agent}
+**Next:** sarankan 1 tindakan lanjutan yang sesuai untuk tugas ini
+
+WAJIB: Cantumkan FOOTER di AKHIR setiap respons. Jangan pernah lewatkan."""
 
     render_config()
 
@@ -204,11 +216,15 @@ def _run_agent(agent: str, task: str):
                 resp = json.loads(out_text)
                 text = resp.get("text") or resp.get("content", "")
                 if text:
-                    text = ensure_footer(text, code, active)
-                    print(text[:2000])
+                    text = ensure_footer(text, code, active, task_class=task_class, task=task)
+                    footer_len = len(build_footer(code, active))
+                    limit = 2000 + footer_len
+                    print(text[:limit])
             except (json.JSONDecodeError, AttributeError):
-                text = ensure_footer(out_text[:2000], code, active)
-                print(text)
+                text = out_text
+                if not ensure_footer("", code, active) in text:
+                    text = ensure_footer(text, code, active, task_class=task_class, task=task)
+                print(text[:2000])
             ok(f"{agent} completed")
         else:
             fail(f"{agent} failed: {err_text[:200]}")

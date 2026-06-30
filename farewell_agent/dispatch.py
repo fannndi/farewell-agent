@@ -98,7 +98,18 @@ def run(task: str):
         else:
             print("  (buku panduan/Obsidian belum dikonfigurasi)")
     enriched_task = refine(task, code, active, guide_block)
-    enriched_task += f"\n\nIMPORTANT: Always end your response with the following FOOTER section:\n---\n### FOOTER\nProject: {code}-{active} | Session: will be provided\nNext: suggest one follow-up action\n"
+    task_class_label = task_class or "default"
+    enriched_task += f"""
+
+---
+
+### FOOTER (WAJIB)
+**Project:** {code}-{active}
+**Agent:** {agent}
+**Task Class:** {task_class_label}
+**Next:** sarankan 1 tindakan lanjutan yang sesuai dengan konteks tugas ini
+
+WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, respons dianggap TIDAK LENGKAP."""
 
     # --- 7. Build command ---
     session_args = []

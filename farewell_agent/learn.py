@@ -37,6 +37,10 @@ def analyze_completion(code: str, name: str, task: str, task_class: str | None, 
     if success:
         patterns["by_class"][cls]["success"] += 1
 
+    patterns.setdefault("by_class_footer", {}).setdefault(cls, 0)
+    if footer_ok:
+        patterns["by_class_footer"][cls] = patterns["by_class_footer"].get(cls, 0) + 1
+
     patterns.setdefault("by_agent", {}).setdefault(agent, {"total": 0, "success": 0})
     patterns["by_agent"][agent]["total"] += 1
     if success:

@@ -21,46 +21,63 @@ def run(code: str, name: str) -> list[str]:
     if not patterns or patterns.get("total", 0) < 5:
         return ["Not enough data (need 5+ tasks)"]
 
-    footer_ok = patterns.get("footer_ok", 0)
     total = patterns.get("total", 1)
+    footer_ok = patterns.get("footer_ok", 0)
     footer_rate = footer_ok / total
 
     evolve_data = read_json(_evolve_path(code, name)) or {
         "evolutions": 0, "last_footer_rate": 1.0, "history": []
     }
 
-    # 1. Check footer rate
+    # 1. Check footer rate — overall
     if footer_rate < 0.95:
         _record_evolution(evolve_data, "footer_rate", f"{footer_rate:.0%}")
-        lesson = f"- evolved: footer rate {footer_rate:.0%} — escalate prompt instruction"
-        changes.append(lesson)
+        changes.append(f"- [FOOTER] rate {footer_rate:.0%} — eskalasi instruksi footer (selesai)")
 
-    # 2. Check per-class success rate
+    # 2. Check per-class footer rate
     by_class = patterns.get("by_class", {})
+    for cls, stats in by_class.items():
+        if stats["total"] >= 2:
+            cls_footer = patterns.get("by_class_footer", {}).get(cls, 0)
+            cls_rate = cls_footer / stats["total"]
+            if cls_rate < 0.5 and cls_rate > 0:
+                _record_evolution(evolve_data, f"footer:{cls}", f"{cls_rate:.0%}")
+                changes.append(f"- [FOOTER] {cls}: {cls_rate:.0%} footer — perlu prompt khusus")
+
+    # 3. Check per-class success rate
     for cls, stats in by_class.items():
         if stats["total"] >= 3:
             rate = stats["success"] / stats["total"]
             if rate < 0.5:
                 _record_evolution(evolve_data, f"class:{cls}", f"{rate:.0%} success")
-                lesson = f"- evolved: low success {cls} ({rate:.0%}) — consider model tier upgrade"
-                changes.append(lesson)
+                changes.append(f"- [PERF] {cls}: {rate:.0%} sukses ({stats['success']}/{stats['total']}) — upgrade tier model")
 
-    # 3. Write lessons to MEMORY.md
+    # 4. Check per-agent performance
+    by_agent = patterns.get("by_agent", {})
+    for agent, stats in by_agent.items():
+        if stats["total"] >= 3:
+            rate = stats["success"] / stats["total"]
+            if rate < 0.6:
+                _record_evolution(evolve_data, f"agent:{agent}", f"{rate:.0%} success")
+                changes.append(f"- [AGENT] {agent}: {rate:.0%} sukses — evaluasi agent assignment")
+
+    # 5. Write lessons to MEMORY.md
     if changes:
         current = memory_content(code, name)
-        new_entry = f"\n## Evolution ({_now()})\n" + "\n".join(changes)
+        new_entry = f"\n## Evolusi ({_now()})\n" + "\n".join(changes)
         if new_entry not in current:
             consolidated = current + new_entry if current else new_entry
             if len(consolidated) <= 2100:
                 save_memory(code, name, consolidated)
             else:
-                save_memory(code, name, current[:1800] + f"\n## Evolution ({_now()})\nevolved: consolidated memory\n")
+                consolidated = current[-1800:] + f"\n## Evolusi ({_now()})\n- consolidated: {len(changes)} perubahan\n"
+                save_memory(code, name, consolidated)
 
     evolve_data["last_footer_rate"] = footer_rate
     evolve_data["evolutions"] += len(changes)
     write_json(_evolve_path(code, name), evolve_data)
 
-    return changes if changes else ["All metrics healthy — no evolution needed"]
+    return changes if changes else ["Semua metrik sehat — tidak perlu evolusi"]
 
 
 def _record_evolution(data: dict, metric: str, value: str):

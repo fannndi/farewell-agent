@@ -430,14 +430,20 @@ Project: {code}-{project}{sk}{of} | Budget: {bgt}
     (config.STATE_DIR / "context.md").write_text(ctx, encoding="utf-8")
     footer_inst = f"""# Footer Instruction
 
-IMPORTANT: Always end your response with a FOOTER section in this format:
+## WAJIB: Cantumkan FOOTER di setiap respons
+
+Setiap kali kamu menyelesaikan tugas, AKHIRI respons dengan FOOTER berikut. Jangan pernah lewatkan.
+
+Format WAJIB:
 
 ---
 ### FOOTER
-Project: {code}-{project} | Session: <id>
-Next: <one follow-up suggestion>
+**Project:** {code}-{project}
+**Next:** <saran 1 tindakan lanjutan>
 
-The FOOTER helps the user know what project context you're working in and what to do next.
+---
+
+WAJIB: FOOTER harus ada di SETIAP respons. Ini adalah aturan utama.
 """
     (config.STATE_DIR / "footer.md").write_text(footer_inst, encoding="utf-8")
 
