@@ -60,8 +60,8 @@ def _ensure_9router() -> bool:
     router_dir = config.ROUTER_DIR
     standalone = router_dir / ".next" / "standalone"
     src = router_dir / ".next" / "static"
-    dst = standalone / "public" / "_next" / "static"
-    if src.exists() and dst.parent.parent.exists():
+    dst = standalone / ".next" / "static"
+    if src.exists():
         dst.mkdir(parents=True, exist_ok=True)
         for item in src.iterdir():
             (shutil.copytree if item.is_dir() else shutil.copy2)(item, dst / item.name, dirs_exist_ok=True)
