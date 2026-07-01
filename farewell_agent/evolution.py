@@ -20,7 +20,7 @@ REPOS = [
 EVOSTATE_FILE = "evostate.json"
 LEVEL_PROMPTS = {
     1: "Buat program Python sederhana yang menerima input CLI dan mencetak output.",
-    2: "Buat program dengan minimal 2 fungsi + error handling untuk input tidak valid.",
+    2: "Buat program CLI manajemen kontak dengan menu: tambah, lihat, cari, hapus kontak. Minimal 2 file (main.py, storage.py). Gunakan fungsi terpisah per fitur. Error handling untuk input tidak valid. Data disimpan di dictionary in-memory.",
     3: "Buat program multi-file dengan modular imports dan logging.",
     4: "Buat program yang menggunakan minimal satu library eksternal (pip install).",
     5: "Buat program dengan pattern arsitektur (MVC/Repository/Service Layer).",
@@ -215,17 +215,30 @@ def _execute_scenario(scenario: dict, feedback: str = "") -> dict:
         task += f"\n\nPrevious attempt feedback: {feedback[:200]}"
         task += "\nPerbaiki error dan pastikan program berjalan dengan benar."
 
+    from .dispatch import run as dispatch_run
+    passed = False
+    error_msg = ""
+
+    # Phase 1: Plan (uses WORKER combo — 9Router distributes)
+    plan_task = f"Buat rencana implementasi detail untuk:\n{task}\n\nOutput: langkah-langkah, file structure, fungsi, dan alur program."
     try:
-        from .dispatch import run as dispatch_run
+        dispatch_run(plan_task, model_override="WORKER")
+    except (SystemExit, Exception):
+        duration = _time.time() - t0
+        return {"passed": False, "duration": duration, "error": "plan phase failed"}
+
+    # Phase 2: Implement (uses WORKER combo — next request to 9Router)
+    try:
         dispatch_run(task, model_override="WORKER")
         passed = True
     except SystemExit:
         passed = False
     except Exception as e:
         passed = False
+        error_msg = str(e)
 
     duration = _time.time() - t0
-    return {"passed": passed, "duration": duration, "error": "" if passed else str(e) if 'e' in dir() else "unknown"}
+    return {"passed": passed, "duration": duration, "error": error_msg}
 
 
 def _record(changes: list[str]):
