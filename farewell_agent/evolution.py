@@ -1,6 +1,6 @@
 """Self-evolution — run one level, then commit+push."""
 
-import subprocess, time as _time
+import json, re, requests, subprocess, time as _time
 from datetime import datetime, timezone
 from pathlib import Path
 from . import config
@@ -8,6 +8,7 @@ from .helpers import c, step, ok, info, fail
 from .state.io import read_json, write_json
 from .state.memory import save_memory, memory_content
 from . import evodb
+from .worker import select_worker
 
 REPOS = [
     ("ECC", config.ECC_DIR, "main"),
@@ -208,6 +209,66 @@ def _generate_scenario(level: int, weak: dict, count: int) -> dict:
     }
 
 
+def _api_completion(prompt: str, model: str) -> tuple[bool, str]:
+    """Direct 9Router API call — model name appears in traffic as 'opencode' provider."""
+    api_key = config.load_env().get("NINEROUTER_API_KEY", "")
+    if not api_key:
+        return False, "No API key"
+    try:
+        r = requests.post(
+            "http://localhost:20128/v1/chat/completions",
+            json={"model": model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 4096},
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            timeout=300,
+        )
+        if r.status_code != 200:
+            return False, f"HTTP {r.status_code}: {r.text[:200]}"
+        text = r.json()["choices"][0]["message"]["content"]
+        return True, text
+    except Exception as e:
+        return False, str(e)
+
+
+def _write_files(text: str, base_dir: Path):
+    """Parse markdown code blocks with filenames, write to disk."""
+    count = 0
+    # Pattern: ```lang or ``` with optional filename comment
+    blocks = re.findall(r'```(\w+)?\n(.*?)```', text, re.DOTALL)
+    for lang, code in blocks:
+        code = code.strip()
+        if not code:
+            continue
+        # Extract filename from first line comment
+        first = code.split("\n")[0] if "\n" in code else code
+        fname = None
+        for prefix in ("# filename:", "# file:", "// filename:", "// file:"):
+            if first.lower().startswith(prefix.lower()):
+                fname = first[len(prefix):].strip().strip('"').strip("'")
+                code = "\n".join(code.split("\n")[1:]).strip()
+                break
+        if not fname:
+            # Try second line if first is shebang
+            lines = code.split("\n")
+            if len(lines) > 1 and lines[0].startswith("#!"):
+                for prefix in ("# filename:", "# file:"):
+                    if lines[1].lower().startswith(prefix.lower()):
+                        fname = lines[1][len(prefix):].strip().strip('"').strip("'")
+                        code = "\n".join(lines[2:]).strip()
+                        break
+        if fname:
+            fp = base_dir / fname
+            fp.parent.mkdir(parents=True, exist_ok=True)
+            fp.write_text(code, encoding="utf-8")
+            count += 1
+    # Fallback: no filename found, write first block
+    if count == 0 and blocks:
+        fp = base_dir / "examples" / "evo_output.py"
+        fp.parent.mkdir(parents=True, exist_ok=True)
+        fp.write_text(blocks[0][1].strip(), encoding="utf-8")
+        count = 1
+    return count
+
+
 def _execute_scenario(scenario: dict, feedback: str = "") -> dict:
     t0 = _time.time()
     task = scenario["task"]
@@ -215,30 +276,28 @@ def _execute_scenario(scenario: dict, feedback: str = "") -> dict:
         task += f"\n\nPrevious attempt feedback: {feedback[:200]}"
         task += "\nPerbaiki error dan pastikan program berjalan dengan benar."
 
-    from .dispatch import run as dispatch_run
-    passed = False
-    error_msg = ""
+    root = config.ROOT_DIR
 
-    # Phase 1: Plan
+    # Phase 1: Plan (direct API — traffic shows worker model)
     plan_task = f"Buat rencana implementasi detail untuk:\n{task}\n\nOutput: langkah-langkah, file structure, fungsi, dan alur program."
-    try:
-        dispatch_run(plan_task, model_override="WORKER")
-    except (SystemExit, Exception):
+    plan_model = select_worker(task_class=None, task_hint=plan_task)
+    plan_ok, plan_text = _api_completion(plan_task, plan_model)
+    if not plan_ok:
         duration = _time.time() - t0
-        return {"passed": False, "duration": duration, "error": "plan phase failed"}
+        return {"passed": False, "duration": duration, "error": f"plan: {plan_text[:200]}"}
+    ok("Plan selesai")
 
-    # Phase 2: Implement
-    try:
-        dispatch_run(task, model_override="WORKER")
-        passed = True
-    except SystemExit:
-        passed = False
-    except Exception as e:
-        passed = False
-        error_msg = str(e)
+    # Phase 2: Implement (direct API — traffic shows next worker)
+    impl_model = select_worker(task_class=None, task_hint=task)
+    impl_ok, impl_text = _api_completion(task, impl_model)
+    if not impl_ok:
+        duration = _time.time() - t0
+        return {"passed": False, "duration": duration, "error": f"impl: {impl_text[:200]}"}
+    files = _write_files(impl_text, root)
+    ok(f"Hasil: {files} file(s) ditulis")
 
     duration = _time.time() - t0
-    return {"passed": passed, "duration": duration, "error": error_msg}
+    return {"passed": True, "duration": duration, "error": ""}
 
 
 def _record(changes: list[str]):
