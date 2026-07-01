@@ -413,6 +413,23 @@ Juga update USER.md jika ada preferensi baru."""
     except Exception as e:
         info(f"Scribe error: {e}")
 
+def cmd_worker_status(args):
+    from .worker import get_usage_stats, get_pool, scribe_model
+    from .state.io import read_json
+    from .helpers import c
+    stats = get_usage_stats()
+    pool = get_pool()
+    scribe = scribe_model()
+    print(f"\n  {c('Worker Pool', 'cyan')}")
+    for m in pool:
+        tag = " [scribe]" if m == scribe else ""
+        cnt = next((s['count'] for s in stats if s['model'] == m), 0)
+        pct = next((s['pct'] for s in stats if s['model'] == m), 0)
+        print(f"  {m:<35} {cnt:>3} tasks ({pct:>2}%) {'#' * (pct // 5)}{'.' * (20 - pct // 5)}{tag}")
+    total = sum(s['count'] for s in stats)
+    print(f"\n  Total: {total} worker selections")
+    print()
+
 def write_context_footer(project: str | None = None, mode: str | None = None):
     from .state.registry import get_active, get_code, list_all
     from .indexer import get_skills, write_active_skills
@@ -607,6 +624,9 @@ def main():
     p = sub.add_parser("scribe", help="Juru tulis: update MEMORY.md & sync Obsidian")
     p.add_argument("task", nargs="?", default="", help="Fokus catatan (opsional)")
     p.set_defaults(func=cmd_scribe)
+
+    p = sub.add_parser("worker-status", help="Worker pool usage stats")
+    p.set_defaults(func=cmd_worker_status)
 
     # Guide book (buku panduan) commands
     p = sub.add_parser("cari", help="Cari di buku panduan (Obsidian vault)")

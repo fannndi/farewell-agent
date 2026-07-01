@@ -7,7 +7,7 @@ name = "farewell-agent"
 version = "3.0.0"
 description = "AI coding assistant orchestrator — project-aware skills, memory, model routing"
 requires-python = ">=3.10"
-dependencies = ["pyyaml>=6.0"]
+dependencies = ["pyyaml>=6.0", "requests>=2.28"]
 
 [project.scripts]
 farewell-agent = "farewell_agent.cli:main"
