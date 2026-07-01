@@ -18,7 +18,6 @@ REPOS = [
 ]
 
 EVOSTATE_FILE = "evostate.json"
-MODEL_FOR_EVOLUTION = "SPECIAL"
 LEVEL_PROMPTS = {
     1: "Buat program Python sederhana yang menerima input CLI dan mencetak output.",
     2: "Buat program dengan minimal 2 fungsi + error handling untuk input tidak valid.",
@@ -218,7 +217,7 @@ def _execute_scenario(scenario: dict, feedback: str = "") -> dict:
 
     try:
         from .dispatch import run as dispatch_run
-        dispatch_run(task, model_override=MODEL_FOR_EVOLUTION)
+        dispatch_run(task, model_override="WORKER")
         passed = True
     except SystemExit:
         passed = False
@@ -240,7 +239,7 @@ def _record(changes: list[str]):
             save_memory(code, active, mem + entry)
         from . import obsidian
         if obsidian.is_configured():
-            obsidian.write_session_note(code, active, "evolution", "auto", MODEL_FOR_EVOLUTION, True,
+            obsidian.write_session_note(code, active, "evolution", "auto", "WORKER", True,
                                          "; ".join(changes[:3]))
     except Exception:
         pass
