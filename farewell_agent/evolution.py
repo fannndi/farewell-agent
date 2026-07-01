@@ -223,8 +223,14 @@ def _api_completion(prompt: str, model: str) -> tuple[bool, str]:
         )
         if r.status_code != 200:
             return False, f"HTTP {r.status_code}: {r.text[:200]}"
-        text = r.json()["choices"][0]["message"]["content"]
-        return True, text
+        text = r.text
+        # Strip SSE streaming suffix ("data: [DONE]")
+        idx = text.find("data: [DONE]")
+        if idx > 0:
+            text = text[:idx].rstrip()
+        data = json.loads(text)
+        content = data["choices"][0]["message"]["content"]
+        return True, content
     except Exception as e:
         return False, str(e)
 
