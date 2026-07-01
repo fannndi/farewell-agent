@@ -6,11 +6,14 @@ from .state.io import read_json, write_json
 
 COUNTER_FILE = "worker_counter.json"
 SCRIBE_KEYWORDS = {"memory", "context", "obsidian", "summary", "scribe", "catat", "tulis", "ringkas"}
+_COMBO_CACHE: dict[str, bool] = {}
 
 def _counter_path() -> Path:
     return config.FAREWELL_DIR / COUNTER_FILE
 
 def _is_combo(name: str = "WORKER") -> bool:
+    if name in _COMBO_CACHE:
+        return _COMBO_CACHE[name]
     try:
         import sqlite3
         db = config._9router_db()
@@ -18,9 +21,11 @@ def _is_combo(name: str = "WORKER") -> bool:
             conn = sqlite3.connect(str(db))
             exists = conn.execute("SELECT 1 FROM combos WHERE name=?", (name,)).fetchone()
             conn.close()
-            return exists is not None
+            _COMBO_CACHE[name] = exists is not None
+            return _COMBO_CACHE[name]
     except Exception:
         pass
+    _COMBO_CACHE[name] = False
     return False
 
 def get_pool() -> list[str]:

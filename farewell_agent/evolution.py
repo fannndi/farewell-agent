@@ -216,18 +216,23 @@ def _execute_scenario(scenario: dict, feedback: str = "") -> dict:
         task += "\nPerbaiki error dan pastikan program berjalan dengan benar."
 
     from .dispatch import run as dispatch_run
+    from .worker import select_worker
     passed = False
     error_msg = ""
 
-    # Phase 1: Plan (uses WORKER combo — 9Router distributes)
+    # Phase 1: Plan (pilih worker)
     plan_task = f"Buat rencana implementasi detail untuk:\n{task}\n\nOutput: langkah-langkah, file structure, fungsi, dan alur program."
+    w1 = select_worker(task_class=None, task_hint=plan_task)
+    info(f"Phase 1 (plan) -> worker: {w1}")
     try:
         dispatch_run(plan_task, model_override="WORKER")
     except (SystemExit, Exception):
         duration = _time.time() - t0
         return {"passed": False, "duration": duration, "error": "plan phase failed"}
 
-    # Phase 2: Implement (uses WORKER combo — next request to 9Router)
+    # Phase 2: Implement (pilih worker lain — round-robin)
+    w2 = select_worker(task_class=None, task_hint=task)
+    info(f"Phase 2 (impl) -> worker: {w2}")
     try:
         dispatch_run(task, model_override="WORKER")
         passed = True
