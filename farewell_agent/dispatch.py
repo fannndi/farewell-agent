@@ -108,9 +108,12 @@ def run(task: str, model_override: str | None = None):
     ok(f"Config synced ({agent} @ {resolved['resolved']})")
 
     # --- 5. Session management ---
-    resume_note = suggest_resume(code, active)
-    if resume_note:
-        info(resume_note)
+    try:
+        resume_note = suggest_resume(code, active)
+        if resume_note:
+            info(resume_note)
+    except Exception as e:
+        info(f"suggest_resume error: {e}")
 
     session_id = start_session(code, active, task, agent, resolved["resolved"], task_class)
     info(f"Session: {session_id}")

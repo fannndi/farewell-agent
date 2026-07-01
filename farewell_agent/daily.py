@@ -1,4 +1,4 @@
-import json, shutil, socket, subprocess, time, urllib.request
+import json, os, shutil, socket, subprocess, time, urllib.request
 from pathlib import Path
 from . import config
 from .helpers import c, step, ok, skip, fail, info
@@ -73,7 +73,8 @@ def _ensure_9router() -> bool:
                 line = line.strip()
                 if line.startswith("DATA_DIR="): data_dir = line.split("=", 1)[1].strip(); break
         env = {"PORT": "20128", "NODE_ENV": "production", "DATA_DIR": data_dir, "INITIAL_PASSWORD": "123456"}
-        node_cmd = ["node", str(standalone / "server.js")] if standalone.exists() else ["npx", "next", "start", "-p", "20128"]
+        npx_cmd = "npx.cmd" if os.name == "nt" else "npx"
+        node_cmd = ["node", str(standalone / "server.js")] if standalone.exists() else [npx_cmd, "next", "start", "-p", "20128"]
         proc = subprocess.Popen(node_cmd, cwd=str(router_dir), env={**os.environ, **env},
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         deadline = time.monotonic() + 30
@@ -120,7 +121,8 @@ def _index_awesome():
 
 def _update_9router():
     try:
-        r = subprocess.run(["npm", "update"], cwd=str(config.ROUTER_DIR),
+        npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
+        r = subprocess.run([npm_cmd, "update"], cwd=str(config.ROUTER_DIR),
                           capture_output=True, text=True, timeout=120)
         if r.returncode == 0:
             ok("9Router npm packages updated")
