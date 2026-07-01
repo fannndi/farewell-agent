@@ -31,6 +31,7 @@ TEMP/
 .farewell/registry.json
 .farewell/manifests/
 .farewell/memory/
+.farewell/worker_counter.json
 
 # Bytecode
 __pycache__/

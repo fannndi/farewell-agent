@@ -87,8 +87,14 @@ def run(task: str, model_override: str | None = None):
     from .roles import is_org, resolve_model, resolve_agent as _resolve_agent
     agent = _resolve_agent(task_class, work_mode)
 
-    # Determine model key: override or default LEADER_1
-    model_key = model_override or "LEADER_1"
+    # Determine model key: override > task_model_preferences > SPECIAL
+    model_key = model_override
+    if not model_key:
+        try:
+            roles_data = json.loads(config.ROLES_FILE.read_text(encoding="utf-8"))
+            model_key = roles_data.get("task_model_preferences", {}).get(task_class or "", {}).get("model", "SPECIAL")
+        except Exception:
+            model_key = "SPECIAL"
     resolved = resolve_model(model_key)
     if work_mode != "plan":
         in_org = is_org(model_key)
@@ -96,6 +102,11 @@ def run(task: str, model_override: str | None = None):
             info(f"Model {model_key} not in org — using build agent")
             agent = "build"
         agent = _resolve_agent(task_class, work_mode, model_key)
+
+    # Worker pool: jika WORKER, pilih specific model via select_worker()
+    if model_key == "WORKER":
+        from .worker import select_worker
+        resolved["resolved"] = select_worker(task_class, task)
 
     # --- 3. Plan mode guard ---
     if work_mode == "plan" and agent not in ["planner", "architect", "docs-lookup"]:
@@ -142,13 +153,7 @@ def run(task: str, model_override: str | None = None):
 
 WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, respons dianggap TIDAK LENGKAP."""
 
-    # --- 7a. Team workflow (orchestrator -> planner -> executor) ---
-    if resolved.get("agent") == "team" and work_mode == "build":
-        _run_team_workflow(enriched_task, task, code, active, resolved, project_path, session_id)
-        lock.unlink(missing_ok=True)
-        return
-
-    # --- 7b. Build command ---
+    # --- 7. Build command ---
     session_args = []
     mem = load_session(code, active)
     if mem and mem.get("session_id"):
@@ -265,87 +270,4 @@ WAJIB: Cantumkan ### FOOTER di AKHIR setiap respons. Jika tidak ada FOOTER, resp
         fail(f"Dispatch error: {e}")
 
 
-def _run_team_workflow(enriched_task: str, task: str, code: str, active: str,
-                       resolved: dict, project_path: str | None, session_id: str):
-    """Team workflow: planner (WORKER) → senior-engineer (WORKER)."""
-    from .helpers import step, ok, info as _info, fail
-    from pathlib import Path
-    import subprocess, json, time as _time
 
-    t0 = _time.time()
-    worker_model = resolved["worker"]
-    worker_str = f"9router/{worker_model}"
-
-    step("TEAM", f"Orchestrator {resolved['model_key']} -> WORKER")
-    _info(f"Planner @ {worker_model} (read) + Senior-engineer @ {worker_model} (write)")
-    print()
-
-    def _run_one(agent_name: str, prompt: str) -> tuple[bool, str]:
-        parts = [shutil.which("opencode"), "run", prompt, "--agent", agent_name,
-                 "--model", worker_str, "--format", "json"]
-        if project_path and str(Path(project_path).resolve()) != str(config.ROOT_DIR.resolve()):
-            parts += ["--dir", str(project_path)]
-        if config.is_windows():
-            quoted = [f'"{p}"' if " " in p else p for p in parts]
-            cmd = " ".join(quoted)
-            r = subprocess.run(cmd, capture_output=True, timeout=600, shell=True)
-        else:
-            r = subprocess.run(parts, capture_output=True, timeout=600)
-        if r.returncode != 0:
-            return False, r.stderr.decode("utf-8", errors="replace")[:300]
-        try:
-            resp = json.loads(r.stdout.decode("utf-8", errors="replace"))
-            text = resp.get("text") or resp.get("content", "") or ""
-            return True, text[:2000]
-        except json.JSONDecodeError:
-            return True, r.stdout.decode("utf-8", errors="replace")[:2000]
-
-    # Step 1: Planner (pake build — primary agent)
-    _info("Step 1/2: Planner — riset & rencana")
-    plan_ok, plan_text = _run_one("build", enriched_task + "\n\nBuat rencana implementasi detail: langkah, file, pattern.")
-    if plan_ok:
-        ok("Planner selesai")
-    else:
-        fail(f"Planner gagal: {plan_text[:100]}")
-
-    # Step 2: Senior-engineer
-    _info("Step 2/2: Senior-engineer — implementasi")
-    exec_prompt = enriched_task
-    if plan_ok and plan_text:
-        exec_prompt += f"\n\nRencana dari planner:\n{plan_text[:1500]}"
-    exec_prompt += "\n\nIMPLEMENTASI: Eksekusi rencana di atas."
-    exec_ok, exec_text = _run_one("build", exec_prompt)
-
-    duration = _time.time() - t0
-    success = exec_ok
-    summary = f"Team[{resolved['model_key']}→WORKER]: {task[:60]}"
-
-    if success:
-        ok("Senior-engineer selesai")
-    else:
-        fail(f"Senior-engineer gagal: {exec_text[:100]}")
-
-    # Session + evodb + obsidian (safe: don't let side-effects break success)
-    try:
-        end_session(code, active, session_id, "completed" if success else "failed", None, summary)
-    except Exception:
-        pass
-    try:
-        project_label = f"{code}-{active}"
-        evodb.init()
-        evodb.insert_task(project_label, None, "team", resolved["resolved"],
-                          footer_ok=success, duration_s=duration, success=success)
-        write_trace(project_label, None, "team", resolved["resolved"], success, summary, duration)
-    except Exception:
-        pass
-    try:
-        if obsidian.is_configured():
-            obsidian.write_session_note(code, active, task, "team", resolved["resolved"], success, summary)
-    except Exception:
-        pass
-
-    if success:
-        print()
-        ok(f"Team workflow selesai ({resolved['model_key']} -> WORKER eksekusi)")
-    else:
-        sys.exit(1)

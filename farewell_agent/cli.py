@@ -368,6 +368,51 @@ def cmd_extract_knowledge(args):
         from .helpers import fail
         fail("Extraction failed -- check errors above")
 
+def cmd_scribe(args):
+    """Juru tulis: summarise recent sessions -> update MEMORY.md + sync Obsidian."""
+    from .state.registry import get_active, get_code
+    from .state.session import recent_sessions
+    from .helpers import info, ok
+    from .worker import scribe_model
+    import shutil, subprocess, sys
+    active = get_active()
+    code = get_code(active)
+    sessions = recent_sessions(code, active, 3)
+    if not sessions:
+        print("  No sessions to scribe.")
+        return
+    lines = []
+    for s in reversed(sessions):
+        status = s.get("status", "?")
+        task = s.get("task", "")[:80]
+        summary = s.get("summary", "")[:80]
+        lines.append(f"- [{status}] {task} -- {summary}")
+    ctx = "\n".join(lines)
+    model = scribe_model()
+    if not model:
+        info("No scribe model configured")
+        return
+    prompt = f"""Review session history dan update MEMORY.md dengan pelajaran baru:
+{ctx}
+Simpan ke MEMORY.md (file .farewell/memory/{code}-{active}/MEMORY.md)
+Juga update USER.md jika ada preferensi baru."""
+    opencode = shutil.which("opencode")
+    if not opencode:
+        info("opencode not found — saving notes locally")
+        from .state.memory import save_memory
+        save_memory(code, active, f"## Scribe Notes\n{ctx}\n")
+        return
+    parts = [opencode, "run", prompt, "--agent", "build", "--model", f"9router/{model}", "--format", "json"]
+    try:
+        r = subprocess.run(parts, capture_output=True, timeout=120)
+        if r.returncode == 0:
+            ok("Scribe selesai — MEMORY.md & Obsidian terupdate")
+        else:
+            err = r.stderr.decode("utf-8", errors="replace")[:200]
+            info(f"Scribe warning: {err}")
+    except Exception as e:
+        info(f"Scribe error: {e}")
+
 def write_context_footer(project: str | None = None, mode: str | None = None):
     from .state.registry import get_active, get_code, list_all
     from .indexer import get_skills, write_active_skills
@@ -558,6 +603,10 @@ def main():
     p = sub.add_parser("refactor", help="Clean up code: dead code, imports, structure")
     p.add_argument("task", nargs="?", default="", help="Focus area (optional)")
     p.set_defaults(func=lambda a: cmd_run(a, wf_override="refactor"))
+
+    p = sub.add_parser("scribe", help="Juru tulis: update MEMORY.md & sync Obsidian")
+    p.add_argument("task", nargs="?", default="", help="Fokus catatan (opsional)")
+    p.set_defaults(func=cmd_scribe)
 
     # Guide book (buku panduan) commands
     p = sub.add_parser("cari", help="Cari di buku panduan (Obsidian vault)")

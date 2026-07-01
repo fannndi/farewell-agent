@@ -2,10 +2,10 @@
   "schema_version": 3,
   "org_registry": ["LEADER_1", "LEADER_2", "SPECIAL", "WORKER"],
   "resolve": {
-    "LEADER_1": { "role": "orchestrator", "agent": "team" },
-    "LEADER_2": { "role": "orchestrator", "agent": "team" },
-    "SPECIAL":  { "role": "orchestrator", "agent": "team" },
-    "WORKER":   { "role": "executor",   "agent": "senior-engineer" }
+    "LEADER_1": { "role": "orchestrator", "agent": "orchestrator" },
+    "LEADER_2": { "role": "orchestrator", "agent": "orchestrator" },
+    "SPECIAL":  { "role": "executor",    "agent": "build" },
+    "WORKER":   { "role": "executor",    "agent": "build" }
   },
   "agent_map": {
     "security-review":     "security-reviewer",
@@ -15,6 +15,10 @@
     "rust-debug":           "build",
     "kotlin-debug":         "build",
     "default":             "build"
+  },
+  "worker_pool": {
+    "strategy": "round_robin",
+    "scribe_index": 4
   },
   "plan_agents": ["planner", "architect", "docs-lookup"],
   "task_model_preferences": {
